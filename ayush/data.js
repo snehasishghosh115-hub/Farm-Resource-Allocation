@@ -1,24 +1,18 @@
-/**
- * EXPLANATION:
- * This database acts as the core knowledge graph for AgriOptima's recommendation engine.
- * Each crop object contains specific agronomic and economic variables used by the optimization algorithm.
- * By modularizing this data, the application is pre-structured for scaling to a full Node.js/MongoDB backend.
- */
 
 const cropDatabase = [
-    // Kharif Crops (Monsoon: June - October)
+    
     { id: "C001", name: "Rice (Paddy)", seasons: ["Kharif"], water_req: 5000, yield_per_acre: 1.5, est_price: 20000, soil_types: ["clay", "loamy"], ph_min: 5.0, ph_max: 6.5, resilience: 0.4, carbon_per_kg: 2.5, groundwater_impact: 1.0, organic_bonus: 0 },
     { id: "C002", name: "Cotton", seasons: ["Kharif"], water_req: 3000, yield_per_acre: 0.8, est_price: 35000, soil_types: ["loamy", "sandy"], ph_min: 5.5, ph_max: 7.5, resilience: 0.7, carbon_per_kg: 1.5, groundwater_impact: 0.8, organic_bonus: 5 },
     { id: "C003", name: "Maize", seasons: ["Kharif"], water_req: 2500, yield_per_acre: 2.0, est_price: 15000, soil_types: ["loamy"], ph_min: 5.8, ph_max: 7.0, resilience: 0.6, carbon_per_kg: 0.8, groundwater_impact: 0.6, organic_bonus: 5 },
     { id: "C004", name: "Soybean", seasons: ["Kharif"], water_req: 2000, yield_per_acre: 1.2, est_price: 30000, soil_types: ["loamy", "clay"], ph_min: 6.0, ph_max: 7.0, resilience: 0.65, carbon_per_kg: 0.4, groundwater_impact: 0.4, organic_bonus: 15 },
 
-    // Rabi Crops (Winter: November - March)
+    
     { id: "C005", name: "Wheat", seasons: ["Rabi"], water_req: 2000, yield_per_acre: 1.8, est_price: 22000, soil_types: ["loamy", "clay"], ph_min: 6.0, ph_max: 7.5, resilience: 0.8, carbon_per_kg: 1.2, groundwater_impact: 0.7, organic_bonus: 5 },
     { id: "C006", name: "Mustard", seasons: ["Rabi"], water_req: 1500, yield_per_acre: 0.6, est_price: 45000, soil_types: ["loamy", "sandy"], ph_min: 6.0, ph_max: 7.5, resilience: 0.75, carbon_per_kg: 0.6, groundwater_impact: 0.4, organic_bonus: 10 },
     { id: "C007", name: "Barley", seasons: ["Rabi"], water_req: 1800, yield_per_acre: 1.5, est_price: 18000, soil_types: ["loamy", "sandy"], ph_min: 6.0, ph_max: 8.0, resilience: 0.85, carbon_per_kg: 0.7, groundwater_impact: 0.5, organic_bonus: 8 },
     { id: "C008", name: "Gram (Chickpea)", seasons: ["Rabi"], water_req: 1200, yield_per_acre: 0.5, est_price: 50000, soil_types: ["loamy", "clay"], ph_min: 6.0, ph_max: 7.5, resilience: 0.8, carbon_per_kg: 0.3, groundwater_impact: 0.3, organic_bonus: 20 },
 
-    // Zaid Crops (Summer: March - June)
+    
     { id: "C009", name: "Watermelon", seasons: ["Zaid"], water_req: 3500, yield_per_acre: 8.0, est_price: 8000, soil_types: ["sandy", "loamy"], ph_min: 6.0, ph_max: 7.0, resilience: 0.5, carbon_per_kg: 0.5, groundwater_impact: 0.8, organic_bonus: 5 },
     { id: "C010", name: "Cucumber", seasons: ["Zaid"], water_req: 2500, yield_per_acre: 5.0, est_price: 12000, soil_types: ["loamy", "sandy"], ph_min: 6.0, ph_max: 7.0, resilience: 0.45, carbon_per_kg: 0.4, groundwater_impact: 0.6, organic_bonus: 5 },
     { id: "C011", name: "Moong Dal", seasons: ["Zaid"], water_req: 1000, yield_per_acre: 0.4, est_price: 60000, soil_types: ["loamy", "clay"], ph_min: 6.3, ph_max: 7.2, resilience: 0.9, carbon_per_kg: 0.2, groundwater_impact: 0.2, organic_bonus: 20 },
@@ -26,7 +20,7 @@ const cropDatabase = [
 ];
 
 const ESG_CONSTANTS = {
-    CARBON_BENCHMARK: 1500, // kg CO2 per acre benchmark
+    CARBON_BENCHMARK: 1500, 
     WATER_SCARCITY_THRESHOLD: 0.7,
     ORGANIC_SCORE_MAX: 100
 };
@@ -70,18 +64,18 @@ const indianStates = {
     "Puducherry": { lat: 11.9416, lon: 79.8083 }
 };
 
-// Group months into Indian agricultural seasons
+
 function getSeason(monthValue) {
     const month = parseInt(monthValue);
-    // Zaid: Mar (3), Apr (4), May (5)
-    // Kharif: Jun (6), Jul (7), Aug (8), Sep (9), Oct (10)
-    // Rabi: Nov (11), Dec (12), Jan (1), Feb (2)
+    
+    
+    
     if ([3, 4, 5].includes(month)) return "Zaid";
     if ([6, 7, 8, 9, 10].includes(month)) return "Kharif";
     return "Rabi";
 }
 
-// Export for use in app.js
+
 
 const stateDistricts = {
     "Andhra Pradesh": ["Anantapur", "Chittoor", "East Godavari", "Guntur", "Krishna", "Kurnool", "Prakasam", "Srikakulam", "Visakhapatnam", "Vizianagaram", "West Godavari", "YSR Kadapa"],
@@ -121,7 +115,7 @@ const stateDistricts = {
     "Lakshadweep": ["Lakshadweep"],
     "Puducherry": ["Puducherry", "Karaikal", "Mahe", "Yanam"],
 
-    // --- Major City Expansions ---
+    
     "Patna": ["Patna Sadar", "Phulwari Sharif", "Danapur", "Bihta", "Maner", "Sampatchak", "Punpun"],
     "Raipur": ["Raipur", "Abhanpur", "Arang", "Dharsiwa", "Tilda"],
     "Ranchi": ["Ranchi", "Kanke", "Ormanjhi", "Angara", "Namkum", "Ratu"],
@@ -136,24 +130,24 @@ const stateDistricts = {
 
 
 const districtBlocks = {
-    // Maharashtra
+    
     "Pune": ["Pune City", "Haveli", "Khed", "Ambegaon", "Junner", "Shirur", "Daund", "Indapur", "Baramati", "Purandar", "Bhor", "Velhe", "Mulshi", "Maval"],
     "Nashik": ["Nashik", "Igatpuri", "Dindori", "Peth", "Trimbakeshwar", "Kalwan", "Deola", "Surgana", "Baglan", "Malegaon", "Nandgaon", "Chandwad", "Niphad", "Sinnar", "Yeola"],
     "Nagpur": ["Nagpur Urban", "Nagpur Rural", "Kamptee", "Hingna", "Katol", "Narkhed", "Savner", "Kalmeshwar", "Ramtek", "Mouda", "Parseoni", "Umred", "Bhiwapur", "Kuhi"],
 
-    // Gujarat
+    
     "Ahmedabad": ["Ahmedabad City", "Daskroi", "Sanand", "Bavla", "Dholka", "Viramgam", "Mandal", "Detroj", "Dhandhuka", "Dholera"],
     "Surat": ["Surat City", "Olpad", "Choryasi", "Kamrej", "Palsana", "Bardoli", "Mahan", "Vyara", "Songadh", "Uchhal", "Nizar", "Mandvi", "Mangrol", "Umarpada"],
 
-    // Uttar Pradesh
+    
     "Lucknow": ["Lucknow City", "Malihabad", "Bakshi Ka Talab", "Lucknow", "Mohanlalganj"],
     "Agra": ["Agra City", "Agra", "Kiraoili", "Kheragarh", "Fatehabad", "Bah"],
 
-    // Karnataka
+    
     "Bengaluru Urban": ["Bengaluru North", "Bengaluru South", "Bengaluru East", "Anekal"],
     "Mysuru": ["Mysuru", "T.Narasipura", "Nanjanagudu", "H.D. Kote", "Hunsur", "Piriyapatna", "K.R. Nagar"],
 
-    // Additional States
+    
     "Kurnool": ["Kurnool", "Kodumur", "C. Belagal", "Veldurthi", "Dhone"],
     "Tawang": ["Tawang", "Jang", "Mukto", "Lumla", "Zemithang"],
     "Dibrugarh": ["Dibrugarh", "Barbaruah", "Lahoal", "Panitola", "Tengakhat"],
@@ -179,7 +173,7 @@ const districtBlocks = {
     "Dehradun": ["Dehradun", "Raipur", "Doiwala", "Sahaspur"],
     "North 24 Parganas": ["Barasat-I", "Barasat-II", "Deganga", "Habra-I"],
 
-    // Union Territories
+    
     "North and Middle Andaman": ["Diglipur", "Mayabunder", "Rangat"],
     "Chandigarh": ["Chandigarh"],
     "Dadra and Nagar Haveli": ["Dadra", "Nagar Haveli"],
@@ -189,7 +183,7 @@ const districtBlocks = {
     "Lakshadweep": ["Lakshadweep"],
     "Puducherry": ["Puducherry", "Karaikal", "Ozhukarai", "Bahour"],
 
-    // Fallback for others
+    
     "Default": ["Main Tehsil", "Central Block", "Sub-Region 1", "Sub-Region 2"]
 };
 
@@ -250,19 +244,19 @@ const governmentSchemes = [
     {
         name: "PM-KISAN",
         description: "Income support of ₹6,000/year for all landholding farmer families.",
-        eligibility: (inputs) => true, // All farmers
+        eligibility: (inputs) => true, 
         benefit: "₹2,000 every 4 months"
     },
     {
         name: "Pradhan Mantri Fasal Bima Yojana (PMFBY)",
         description: "Crop insurance against non-preventable natural risks.",
-        eligibility: (inputs) => true, // All crops/states generally covered
+        eligibility: (inputs) => true, 
         benefit: "Risk cover based on sum insured"
     },
     {
         name: "Per Drop More Crop (Micro Irrigation)",
         description: "Subsidy for Drip and Sprinkler irrigation systems.",
-        eligibility: (inputs) => inputs.water_daily < 3000, // Suggest for low water
+        eligibility: (inputs) => inputs.water_daily < 3000, 
         benefit: "45% to 55% subsidy on cost"
     },
     {
@@ -301,20 +295,20 @@ const apmcHubs = {
 };
 
 const creditConstants = {
-    equity_weight: 0.3, // land size
-    repayment_weight: 0.5, // projected profit
-    security_weight: 0.2, // water stability
+    equity_weight: 0.3, 
+    repayment_weight: 0.5, 
+    security_weight: 0.2, 
     base_score: 300
 };
 
 const HI_TRANSLATIONS = {
-    // Header & Toggles
+    
     "app_title": "AgriOptima: किसान मित्र",
     "farmer_mode": "किसान मोड",
     "pro_mode": "प्रो मोड",
     "language": "भाषा",
 
-    // Input Form
+    
     "step_1_title": "स्थान और मिट्टी",
     "state": "राज्य",
     "district": "ज़िला",
@@ -327,33 +321,33 @@ const HI_TRANSLATIONS = {
     "month": "बुवाई का महीना",
     "optimize_btn": "इंजन चलाएं",
 
-    // Results Header
+    
     "primary_recommendation": "मुख्य फ़सल",
     "best_crop": "सबसे अच्छी फ़सल",
     "expected_profit": "अनुमानित लाभ",
     "risk_level": "जोखिम स्तर",
     "water_use": "पानी का उपयोग",
 
-    // ESG & Sustainability
+    
     "esg_score": "स्थिरता स्कोर",
     "carbon_footprint": "कार्बन फुटप्रिंट",
     "groundwater": "भूजल प्रभाव",
     "organic_boost": "जैविक सुधार",
     "investor_ready": "निवेश के लिए तैयार",
 
-    // Voice & Tech
+    
     "voice_input": "बोलकर बताएं",
     "listening": "सुन रहा हूँ...",
     "voice_error": "समझ नहीं आया, फिर से बोलें",
 
-    // Status / Messages
+    
     "optimal": "बेहतरीन",
     "moderate": "मध्यम",
     "critical": "जोखिम भरा",
     "stable": "स्थिर",
     "excellent": "शानदार",
 
-    // Additional Result Headers
+    
     "subsidies": "वित्तीय सहायता (सब्सिडी)",
     "market_risk": "बाजार मूल्य जोखिम मीटर",
     "break_even": "ब्रेक-ईवन विश्लेषण",

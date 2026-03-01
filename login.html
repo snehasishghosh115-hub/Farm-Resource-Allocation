@@ -12,7 +12,7 @@
 </head>
 
 <body class="login-body">
-    <!-- Language Selection Dropdown -->
+    
     <div class="lang-selector-container">
         <select id="lang-selector" class="glass-select lang-select">
             <option value="en" selected>English</option>
@@ -23,7 +23,7 @@
     </div>
 
     <div class="login-container">
-        <!-- Leaf graphics behind login -->
+        
         <div class="abstract-shape shape-1"></div>
         <div class="abstract-shape shape-2"></div>
 
@@ -85,7 +85,7 @@
         </div>
     </div>
 
-    <!-- Multi-language dict object and simple redirect -->
+    
     <script>
         const translations = {
             'en': {
@@ -98,7 +98,7 @@
                 'login-button': 'Access Planner',
                 'login-no-account': 'Don\'t have an account?',
                 'login-register': 'Register Farm',
-                // New register specific
+                
                 'reg-subtitle': 'Create your secure farm profile',
                 'reg-button': 'Create Account',
                 'reg-has-account': 'Already registered?',
@@ -119,7 +119,7 @@
                 'login-button': 'प्लानर खोलें',
                 'login-no-account': 'खाता नहीं है?',
                 'login-register': 'खेत पंजीकृत करें',
-                // New register specific
+                
                 'reg-subtitle': 'अपना सुरक्षित खेत प्रोफाइल बनाएं',
                 'reg-button': 'खाता बनाएं',
                 'reg-has-account': 'पहले से पंजीकृत हैं?',
@@ -140,7 +140,7 @@
                 'login-button': 'प्लॅनर उघडा',
                 'login-no-account': 'खाते नाही?',
                 'login-register': 'शेत नोंदणी',
-                // New register specific
+                
                 'reg-subtitle': 'तुमचे सुरक्षित शेत प्रोफाइल तयार करा',
                 'reg-button': 'खाते तयार करा',
                 'reg-has-account': 'आधीच नोंदणीकृत आहात?',
@@ -161,7 +161,7 @@
                 'login-button': 'திட்டமிடுபவரை அணுகவும்',
                 'login-no-account': 'கணக்கு இல்லையா?',
                 'login-register': 'பதிவு செய்',
-                // New register specific
+                
                 'reg-subtitle': 'உங்கள் பண்ணை சுயவிவரத்தை உருவாக்கவும்',
                 'reg-button': 'கணக்கை உருவாக்கு',
                 'reg-has-account': 'ஏற்கனவே பதிவு செய்துள்ளீர்களா?',
@@ -178,10 +178,10 @@
 
         langSelector.addEventListener('change', (e) => {
             const lang = e.target.value;
-            // Save preference to localStorage so index.html can use it
+            
             localStorage.setItem('agriLanguage', lang);
 
-            // Translate the page
+            
             document.querySelectorAll('[data-i18n]').forEach(el => {
                 const key = el.getAttribute('data-i18n');
                 if (translations[lang][key]) {
@@ -208,7 +208,7 @@
             const submitBtn = document.getElementById('submit-btn');
             submitBtn.innerHTML = '<span data-i18n="verify-otp-btn">Verify OTP</span>';
 
-            // Try to re-translate the button if translation text exists
+            
             const savedLang = localStorage.getItem('agriLanguage') || 'en';
             if (translations[savedLang] && translations[savedLang]['verify-otp-btn']) {
                 submitBtn.querySelector('span').textContent = translations[savedLang]['verify-otp-btn'];
@@ -216,12 +216,12 @@
 
             isOtpState = true;
 
-            // Simulate sending OTP
+            
             const userPhone = document.getElementById('uid').value;
             alert("OTP " + expectedOtp + " sent to " + userPhone + " for verification.");
         });
 
-        // Handle Login / Reg -> Redirects to main app
+        
         document.getElementById('login-form').addEventListener('submit', (e) => {
             e.preventDefault();
 
@@ -250,21 +250,21 @@
                 return;
             }
 
-            // For dummy verification, let's treat any UID/PWD that are blank as false, and if they don't match specific ones
+            
             if (uid === '+91 98765 43210' && pwd === '123456') {
                 btn.innerHTML = '<span>Verifying...</span>';
                 setTimeout(() => {
                     window.location.href = 'index.html';
                 }, 1000);
             } else {
-                // Incorrect credentials
+                
                 document.getElementById('error-container').style.display = 'block';
                 document.getElementById('error-msg').innerText = "Incorrect credentials. Please retry or verify via OTP.";
                 document.getElementById('error-actions').style.display = 'flex';
             }
         });
 
-        // --- Toggling Login vs Register State ---
+        
         let isRegisterState = false;
 
         document.getElementById('toggle-form-btn').addEventListener('click', (e) => {
@@ -277,29 +277,29 @@
             const toggleBtn = document.getElementById('toggle-form-btn');
 
             if (isRegisterState) {
-                // Switch to Register UI
+                
                 subtitle.setAttribute('data-i18n', 'reg-subtitle');
                 submitTextWrapper.setAttribute('data-i18n', 'reg-button');
-                document.querySelector('.options-row').style.display = 'none'; // hide remember me
+                document.querySelector('.options-row').style.display = 'none'; 
 
                 toggleTextWrap.innerHTML = `<span data-i18n="reg-has-account">Already registered?</span> <a href="#" id="toggle-form-btn" data-i18n="reg-login">Log In here</a>`;
             } else {
-                // Switch to Login UI
+                
                 subtitle.setAttribute('data-i18n', 'login-subtitle');
                 submitTextWrapper.setAttribute('data-i18n', 'login-button');
-                document.querySelector('.options-row').style.display = 'flex'; // show remember me
+                document.querySelector('.options-row').style.display = 'flex'; 
 
                 toggleTextWrap.innerHTML = `<span data-i18n="login-no-account">Don't have an account?</span> <a href="#" id="toggle-form-btn" data-i18n="login-register">Register Farm</a>`;
             }
 
-            // Re-attach listener to newly created link
+            
             document.getElementById('toggle-form-btn').addEventListener('click', arguments.callee);
 
-            // Force re-translate current language state
+            
             langSelector.dispatchEvent(new Event('change'));
         });
 
-        // Auto-load saved language on load
+        
         const savedLang = localStorage.getItem('agriLanguage');
         if (savedLang && translations[savedLang]) {
             langSelector.value = savedLang;

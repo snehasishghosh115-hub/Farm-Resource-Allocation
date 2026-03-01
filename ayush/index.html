@@ -46,7 +46,7 @@
                                 <select id="state" name="state" required>
                                     <option value="" disabled selected>Select State / UT</option>
 
-                                    <!-- 28 States -->
+                                    
                                     <option value="Andhra Pradesh">Andhra Pradesh</option>
                                     <option value="Arunachal Pradesh">Arunachal Pradesh</option>
                                     <option value="Assam">Assam</option>
@@ -76,7 +76,7 @@
                                     <option value="Uttarakhand">Uttarakhand</option>
                                     <option value="West Bengal">West Bengal</option>
 
-                                    <!-- 8 Union Territories -->
+                                    
                                     <option value="Andaman and Nicobar Islands">Andaman and Nicobar Islands</option>
                                     <option value="Chandigarh">Chandigarh</option>
                                     <option value="Dadra and Nagar Haveli and Daman and Diu">Dadra and Nagar Haveli and
@@ -204,7 +204,7 @@
                             <i class="icon">📍</i> <span id="resultLocation">State > District > Block</span>
                         </div>
 
-                        <!-- NEW: "What If" Simulator -->
+                        
                         <div class="result-card full-width simulation-card animate-in mb-4">
                             <div
                                 style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 1rem;">
@@ -288,7 +288,7 @@
                             <p class="weather-impact" id="wImpact">Fetching meteorological data for location...</p>
                         </div>
 
-                        <!-- Primary Recommendation metrics -->
+                        
                         <div class="metric highlight-metric">
                             <span class="label">Recommended Crop</span>
                             <span class="value success-text" id="primaryCrop">---</span>
@@ -321,7 +321,7 @@
                             <span class="value success-text" id="irrigationValue">---</span>
                         </div>
 
-                        <!-- NEW: Crop Comparison Mode (Collapsible) -->
+                        
                         <div id="comparisonSection" class="result-card full-width hidden p-4 animate-in">
                             <h3><i class="fas fa-balance-scale"></i> Crop Comparison Mode</h3>
                             <div class="comparison-section">
@@ -329,17 +329,17 @@
                                     <thead>
                                         <tr id="comparisonHead">
                                             <th>Factor</th>
-                                            <!-- Dynamic Headers -->
+                                            
                                         </tr>
                                     </thead>
                                     <tbody id="comparisonBody">
-                                        <!-- Dynamic Rows -->
+                                        
                                     </tbody>
                                 </table>
                             </div>
                         </div>
 
-                        <!-- Resource Allocation Panel -->
+                        
                         <div class="allocation-panel mt-4 mb-3">
                             <p class="section-label">Resource Allocation Engine</p>
                             <div class="allocation-item">
@@ -349,7 +349,7 @@
                                     <span id="landAllocText">0 / 0 Acres</span>
                                 </div>
                                 <div class="progress-bar-container" id="landAllocBarContainer" style="display: flex;">
-                                    <!-- Populated by JS -->
+                                    
                                 </div>
                             </div>
                             <div class="allocation-item mt-2">
@@ -370,8 +370,8 @@
                                 Generating hyperlocal intelligence based on submitted constraints...</p>
                         </div>
 
-                        <!-- Specialty Cards -->
-                        <!-- ESG & Sustainability Score -->
+                        
+                        
                         <div id="sustainabilityCard" class="sustainability-card glass-panel mt-4 p-4 animate-in">
                             <div
                                 style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 1.5rem;">
@@ -452,7 +452,7 @@
                                 (Subsidies)</h3>
                             <p class="section-label" style="margin-bottom: 0.5rem;">Schemes based on your Profile</p>
                             <div id="subsidyList" class="subsidy-list">
-                                <!-- Schemes will be injected here -->
+                                
                                 <div class="text-muted" style="font-size: 0.85rem;">Calculating eligibility...</div>
                             </div>
                         </div>
@@ -510,7 +510,7 @@
                                         class="fas fa-calendar-alt"></i> Fertilizer Schedule</h4>
                                 <div id="fertilizerSchedule" class="mandi-grid"
                                     style="grid-template-columns: 1fr; gap: 0.5rem;">
-                                    <!-- Schedule items will be injected here -->
+                                    
                                 </div>
                             </div>
                             <div id="soilAdviceBox" class="conservation-box"
@@ -615,22 +615,22 @@
                         <div class="chart-placeholder">
                             <p class="section-label">Top Optimal Crops</p>
                             <div class="crop-list" id="cropSuggestions">
-                                <!-- Populated dynamically -->
+                                
                             </div>
                         </div>
 
-                        <!-- NEW STANDALONE: Season-Wise Crop Library -->
+                        
                         <div class="library-placeholder mt-4">
                             <p class="section-label">Season-Wise Crop Library</p>
                             <div class="library-info mb-2">
                                 <span class="badge" id="libSeasonBadge">Detected: ---</span>
                             </div>
                             <div class="crop-list" id="cropLibraryList">
-                                <!-- Populated by JS -->
+                                
                             </div>
                         </div>
 
-                        <!-- Add a raw JSON dump button for the specific architectural requirement -->
+                        
                         <button id="viewJsonBtn" class="secondary-btn">View API JSON Payload</button>
                     </div>
                 </div>
@@ -638,7 +638,7 @@
         </section>
     </main>
 
-    <!-- JSON Payload Modal -->
+    
     <div id="jsonModal" class="modal hidden">
         <div class="modal-content glass-panel">
             <span class="close-modal">&times;</span>
@@ -647,7 +647,7 @@
         </div>
     </div>
 
-    <!-- Modular Scripts -->
+    
     <script src="./data.js"></script>
     <script src="./app.js"></script>
 </body>

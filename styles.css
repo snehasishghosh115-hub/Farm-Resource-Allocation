@@ -45,7 +45,6 @@ body {
     padding: var(--panel-gap);
 }
 
-/* Glassmorphism Panel Base */
 .sidebar,
 .main-content,
 .metrics-panel {
@@ -59,7 +58,6 @@ body {
     flex-direction: column;
 }
 
-/* === Sidebar === */
 .logo {
     display: flex;
     align-items: center;
@@ -193,8 +191,7 @@ input[type=range]::-webkit-slider-runnable-track {
 .crop-tags {
     display: flex;
     flex-wrap: wrap;
-    /* allow wrapping for more tags */
-    gap: 8px;
+        gap: 8px;
 }
 
 .select-group label {
@@ -359,7 +356,6 @@ input[type=range]::-webkit-slider-runnable-track {
     }
 }
 
-/* === Main Content === */
 .main-content {
     padding: 0;
     overflow: hidden;
@@ -518,7 +514,6 @@ input[type=range]::-webkit-slider-runnable-track {
     background: var(--crop-sugarcane);
 }
 
-/* === Metrics Panel === */
 .metrics-panel h2 {
     font-size: 18px;
     font-weight: 500;
@@ -681,7 +676,6 @@ input[type=range]::-webkit-slider-runnable-track {
     line-height: 1.4;
 }
 
-/* === LOGIN PAGE ADVANCED STYLING === */
 .login-body {
     display: flex;
     justify-content: center;
@@ -770,7 +764,6 @@ input[type=range]::-webkit-slider-runnable-track {
     font-size: 13px;
 }
 
-/* Custom Checkbox */
 .checkbox-container {
     display: flex;
     align-items: center;
@@ -870,7 +863,6 @@ input[type=range]::-webkit-slider-runnable-track {
     backdrop-filter: blur(10px);
 }
 
-/* Graphic shapes behind the login panel */
 .abstract-shape {
     position: absolute;
     border-radius: 50%;

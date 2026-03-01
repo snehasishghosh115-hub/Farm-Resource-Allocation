@@ -201,7 +201,7 @@ document.addEventListener('DOMContentLoaded', () => {
         statusIndicator.classList.remove('optimized');
         systemStatusTxt.textContent = 'Calculating optimal constraints...';
         gridCells.forEach(cell => {
-            cell.className = 'grid-cell'; // reset
+            cell.className = 'grid-cell'; 
             cell.style.transform = 'scale(0.8)';
             cell.style.opacity = '0.5';
         });
@@ -220,10 +220,10 @@ document.addEventListener('DOMContentLoaded', () => {
         results.allocation.forEach((cropType, index) => {
             setTimeout(() => {
                 gridCells[index].className = `grid-cell cell-${cropType}`;
-                if (cropType === 'unallocated') gridCells[index].className = 'grid-cell'; // override
+                if (cropType === 'unallocated') gridCells[index].className = 'grid-cell'; 
                 gridCells[index].style.transform = 'scale(1)';
                 gridCells[index].style.opacity = '1';
-            }, index * 10); // stagger animation
+            }, index * 10); 
         });
         yieldOut.textContent = results.metrics.yield;
         waterEffOut.textContent = results.metrics.waterEfficiency;

@@ -1,23 +1,14 @@
-/* 
-  EXPLANATION: 
-  Updated the color palette to fit the agricultural theme. 
-  Emerald greens and teals convey growth, while keeping the dark background for a premium dashboard look.
-*/
 :root {
     --bg-color: #0b1120;
     --text-main: #f8fafc;
     --text-muted: #94a3b8;
     --accent-1: #10b981;
-    /* Emerald Green */
     --accent-2: #06b6d4;
-    /* Cyan/Water color */
 
-    /* Sustainability Status Colors */
     --status-safe: #10b981;
     --status-moderate: #f59e0b;
     --status-critical: #ef4444;
 
-    /* Vibrant Gradients */
     --grad-primary: linear-gradient(135deg, #10b981 0%, #3b82f6 100%);
     --grad-surface: linear-gradient(135deg, rgba(23, 33, 53, 0.8) 0%, rgba(13, 18, 29, 0.9) 100%);
 
@@ -47,7 +38,6 @@ body {
     display: none !important;
 }
 
-/* --- GLASSMORPHISM COMPONENT --- */
 .glass-header {
     position: fixed;
     top: 0;
@@ -93,7 +83,6 @@ nav {
     color: var(--text-main);
 }
 
-/* --- PREMIUM BUTTON DESIGN --- */
 .primary-btn {
     background: linear-gradient(135deg, var(--accent-1), var(--accent-2));
     color: white;
@@ -120,7 +109,6 @@ nav {
     box-shadow: none;
 }
 
-/* --- LAYOUT --- */
 .hero {
     display: flex;
     align-items: flex-start;
@@ -155,7 +143,6 @@ nav {
     line-height: 1.6;
 }
 
-/* --- FORMS --- */
 .form-scroll-container {
     max-height: 80vh;
     overflow-y: auto;
@@ -210,7 +197,6 @@ nav {
     color: white;
 }
 
-/* --- VISUALS & ANIMATIONS --- */
 .hero-visual {
     flex: 1;
     display: flex;
@@ -260,10 +246,8 @@ nav {
 .highlight-metric {
     border-left: 3px solid var(--accent-1);
     background: rgba(16, 185, 129, 0.05);
-    /* very faint emerald */
 }
 
-/* ALLOCATION LAYOUT */
 .allocation-panel {
     background: rgba(0, 0, 0, 0.2);
     border: 1px dashed var(--glass-border);
@@ -294,7 +278,6 @@ nav {
     border-bottom-left-radius: 4px;
 }
 
-/* MANDI INTELLIGENCE */
 .mandi-grid {
     display: grid;
     grid-template-columns: repeat(3, 1fr);
@@ -366,22 +349,18 @@ nav {
     background: #3b82f6;
 }
 
-/* Blue */
 .progress-fill.crop-2 {
     background: #10b981;
 }
 
-/* Emerald */
 .progress-fill.crop-3 {
     background: #f59e0b;
 }
 
-/* Amber */
 .progress-fill.empty {
     background: rgba(255, 255, 255, 0.05);
 }
 
-/* WEATHER AND IMPACT STYLES */
 .weather-panel {
     background: rgba(0, 0, 0, 0.3);
     border: 1px solid var(--glass-border);
@@ -500,7 +479,6 @@ nav {
     line-height: 1.5;
 }
 
-/* SPINNER FOR LOADING STATE */
 .spinner {
     width: 40px;
     height: 40px;
@@ -557,7 +535,6 @@ nav {
     font-weight: 700;
 }
 
-/* Comparison Toggle */
 .comparison-toggle-wrapper {
     display: flex;
     align-items: center;
@@ -608,7 +585,6 @@ input:checked+.toggle-switch::after {
     transform: translateX(18px);
 }
 
-/* Masterpiece "What If" Simulator Aesthetics */
 .simulation-card {
     background: rgba(15, 23, 42, 0.7) !important;
     backdrop-filter: blur(25px) saturate(200%) !important;
@@ -621,7 +597,6 @@ input:checked+.toggle-switch::after {
     transition: box-shadow 0.5s cubic-bezier(0.4, 0, 0.2, 1);
 }
 
-/* Mesmerizing Mesh Background Effect */
 .simulation-card::after {
     content: '';
     position: absolute;
@@ -645,7 +620,6 @@ input:checked+.toggle-switch::after {
     }
 }
 
-/* Dynamic Glow States */
 .simulation-card.glow-positive {
     box-shadow: 0 30px 60px rgba(0, 0, 0, 0.5), 0 0 40px rgba(16, 185, 129, 0.15) !important;
     border-color: rgba(16, 185, 129, 0.3) !important;
@@ -795,7 +769,6 @@ input[type="range"]:active::-webkit-slider-thumb {
     animation: slideRight 0.4s ease-out;
 }
 
-/* ESG Dashboard & Eco-Classy Aesthetics */
 .esg-dashboard {
     display: flex;
     gap: 2rem;
@@ -907,7 +880,6 @@ input[type="range"]:active::-webkit-slider-thumb {
     border-color: rgba(245, 158, 11, 0.4) !important;
 }
 
-/* Mode Toggle Switch */
 .header-controls {
     display: flex;
     align-items: center;
@@ -997,14 +969,12 @@ body.farmer-mode .mode-label.farmer {
     color: #10b981;
 }
 
-/* Farmer Mode Overrides */
 body.farmer-mode {
     --text-muted: #d1d5db;
 }
 
 body.farmer-mode .glass-panel {
     background: rgba(6, 78, 59, 0.8) !important;
-    /* Deep Forest Green */
     border: 2px solid rgba(255, 255, 255, 0.2);
 }
 
@@ -1036,7 +1006,6 @@ body.farmer-mode .specialty-cards,
 body.farmer-mode .sidebar,
 body.farmer-mode .simulation-card {
     display: none !important;
-    /* Hide complex features */
 }
 
 body.farmer-mode .hero-content {
@@ -1088,7 +1057,6 @@ body.farmer-mode .hero-content {
 @media (max-width: 768px) {
     .mode-toggle-container {
         display: none;
-        /* Hide on very small screens or move to menu */
     }
 }
 
@@ -1129,7 +1097,6 @@ body.farmer-mode .hero-content {
     background: rgba(16, 185, 129, 0.1);
 }
 
-/* MODAL STYLES */
 .modal {
     position: fixed;
     top: 0;
@@ -1193,7 +1160,6 @@ body.farmer-mode .hero-content {
     color: white;
 }
 
-/* --- LOCATION SUMMARY --- */
 .location-summary {
     font-size: 0.9rem;
     color: var(--accent-1);
@@ -1212,7 +1178,6 @@ body.farmer-mode .hero-content {
     font-style: normal;
 }
 
-/* --- CROP SUGGESTIONS & LIBRARY --- */
 .crop-list {
     display: grid;
     grid-template-columns: repeat(auto-fill, minmax(140px, 1fr));
@@ -1244,7 +1209,6 @@ body.farmer-mode .hero-content {
     color: var(--text-muted);
 }
 
-/* --- SUSTAINABILITY & AESTHETIC ENHANCEMENTS --- */
 @keyframes slideUpFade {
     from {
         opacity: 0;
@@ -1354,7 +1318,6 @@ body.farmer-mode .hero-content {
     color: var(--text-muted);
 }
 
-/* --- SUBSIDY ENGINE STYLES --- */
 .subsidy-list {
     display: flex;
     flex-direction: column;
