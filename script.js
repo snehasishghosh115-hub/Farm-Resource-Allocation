@@ -1,23 +1,17 @@
-/* =====================================
-   🌱 Farm Resource Planner - JS Logic
-===================================== */
 
 const API_URL = "http://localhost:8000/optimize";
 
 
-// MAIN FUNCTION
+
 async function optimize() {
 
-  // Get Inputs
+  
   const rows = Number(document.getElementById("rows").value);
   const cols = Number(document.getElementById("cols").value);
   const water = Number(document.getElementById("water").value);
 
 
-  /* =====================
-     VALIDATION
-  ====================== */
-
+  
   if (rows <= 0 || cols <= 0) {
     alert("Rows and Columns must be greater than 0");
     return;
@@ -29,17 +23,11 @@ async function optimize() {
   }
 
 
-  /* =====================
-     LOADING UI
-  ====================== */
-
+  
   showMessage("⏳ Optimizing farm layout...");
 
 
-  /* =====================
-     REQUEST PAYLOAD
-  ====================== */
-
+  
   const payload = {
 
     rows: rows,
@@ -56,10 +44,7 @@ async function optimize() {
   };
 
 
-  /* =====================
-     API CALL
-  ====================== */
-
+  
   try {
 
     const response = await fetch(API_URL, {
@@ -82,10 +67,7 @@ async function optimize() {
     const data = await response.json();
 
 
-    /* =====================
-       DISPLAY RESULT
-    ====================== */
-
+    
     drawGrid(data.rows, data.cols, data.layout);
 
     showMessage("✅ Optimization Complete!");
@@ -103,9 +85,6 @@ async function optimize() {
 }
 
 
-/* =====================================
-   GRID DRAWER
-===================================== */
 
 function drawGrid(rows, cols, layout) {
 
@@ -134,9 +113,6 @@ function drawGrid(rows, cols, layout) {
 }
 
 
-/* =====================================
-   STATUS MESSAGE
-===================================== */
 
 function showMessage(text) {
 

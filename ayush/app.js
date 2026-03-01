@@ -1,18 +1,12 @@
-/**
- * EXPLANATION:
- * The optimization logic now acts as a sophisticated filtering and scoring engine.
- * It filters the cropDatabase based on: Season mapping -> Soil suitability 
- * It then ranks them by hypothetical ROI and checks against constraint caps (water/budget).
- */
 
 document.addEventListener('DOMContentLoaded', () => {
 
-    // 1. Initialize State/District/Block Dropdowns
+
     const stateSelect = document.getElementById('state');
     const districtSelect = document.getElementById('district');
     const blockSelect = document.getElementById('block');
 
-    // NATIONWIDE BLOCK API: Load data from comprehensive Gist
+
     let nationwideBlockMap = [];
     const BLOCK_API_URL = 'https://gist.githubusercontent.com/Keshava11/aace79cf260e7955ac1768d3ad6e24bd/raw/districts_block_map.json';
 
@@ -24,89 +18,85 @@ document.addEventListener('DOMContentLoaded', () => {
             console.log("Successfully loaded 700+ districts and 7000+ blocks from API.");
         } catch (error) {
             console.warn("Nationwide Block API failed, using local fallback + Smart Generator:", error);
-            nationwideBlockMap = []; // Fallback to heuristics
+            nationwideBlockMap = [];
         }
     }
     initializeBlockAPI();
 
-    // Populate districts based on state
-    if (stateSelect) {
-        stateSelect.addEventListener('change', () => {
-            const selectedState = stateSelect.value;
-            const districts = window.AgriData.stateDistricts[selectedState] || [];
 
-            // Clear existing options
-            districtSelect.innerHTML = '<option value="" disabled selected>Select District</option>';
-            blockSelect.innerHTML = '<option value="" disabled selected>Select Block</option>';
+    stateSelect.addEventListener('change', () => {
+        const selectedState = stateSelect.value;
+        const districts = window.AgriData.stateDistricts[selectedState] || [];
+
+
+        districtSelect.innerHTML = '<option value="" disabled selected>Select District</option>';
+        blockSelect.innerHTML = '<option value="" disabled selected>Select Block</option>';
+        blockSelect.disabled = true;
+
+        if (districts.length > 0) {
+            districts.forEach(dist => {
+                const option = document.createElement('option');
+                option.value = dist;
+                option.textContent = dist;
+                districtSelect.appendChild(option);
+            });
+            districtSelect.disabled = false;
+        } else {
+            districtSelect.disabled = true;
+        }
+    });
+
+
+    districtSelect.addEventListener('change', () => {
+        const selectedDistrict = districtSelect.value.trim().toUpperCase();
+        let blocks = [];
+
+
+        if (nationwideBlockMap.length > 0) {
+            const distData = nationwideBlockMap.find(d => d.name.toUpperCase() === selectedDistrict);
+            if (distData && distData.blockList) {
+                blocks = distData.blockList.map(b => b.name);
+            }
+        });
+    }
+
+
+        if (blocks.length === 0) {
+            const localKey = Object.keys(window.AgriData.districtBlocks).find(k => k.toUpperCase() === selectedDistrict);
+            if (localKey) {
+                blocks = window.AgriData.districtBlocks[localKey];
+            }
+
+
+        if (blocks.length === 0) {
+            const displayDist = districtSelect.value;
+            blocks = [`${displayDist} Block`, `Main Tehsil`];
+        }
+
+
+        blockSelect.innerHTML = '<option value="" disabled selected>Select Block</option>';
+
+        if (blocks.length > 0) {
+
+            blocks.sort().forEach(b => {
+                const option = document.createElement('option');
+                option.value = b;
+                option.textContent = b;
+                blockSelect.appendChild(option);
+            });
+            blockSelect.disabled = false;
+        } else {
             blockSelect.disabled = true;
+        }
+    });
 
-            if (districts.length > 0) {
-                districts.forEach(dist => {
-                    const option = document.createElement('option');
-                    option.value = dist;
-                    option.textContent = dist;
-                    districtSelect.appendChild(option);
-                });
-                districtSelect.disabled = false;
-            } else {
-                districtSelect.disabled = true;
-            }
-        });
-    }
 
-    // Populate blocks based on district
-    if (districtSelect) {
-        districtSelect.addEventListener('change', () => {
-            const selectedDistrict = districtSelect.value.trim().toUpperCase();
-            let blocks = [];
-
-            // 1. Try Comprehensive API Data
-            if (nationwideBlockMap.length > 0) {
-                const distData = nationwideBlockMap.find(d => d.name.toUpperCase() === selectedDistrict);
-                if (distData && distData.blockList) {
-                    blocks = distData.blockList.map(b => b.name);
-                }
-            }
-
-            // 2. Try Local Fallback (Specific agricultural hubs in data.js)
-            if (blocks.length === 0) {
-                const localKey = Object.keys(window.AgriData.districtBlocks).find(k => k.toUpperCase() === selectedDistrict);
-                if (localKey) {
-                    blocks = window.AgriData.districtBlocks[localKey];
-                }
-            }
-
-            // 3. Precise Safeguard: If no blocks found, use a respectful placeholder or generic 'Block'
-            if (blocks.length === 0) {
-                const displayDist = districtSelect.value;
-                blocks = [`${displayDist} Block`, `Main Tehsil`];
-            }
-
-            // Clear existing options
-            blockSelect.innerHTML = '<option value="" disabled selected>Select Block</option>';
-
-            if (blocks.length > 0) {
-                // Sort blocks alphabetically for better UX
-                blocks.sort().forEach(b => {
-                    const option = document.createElement('option');
-                    option.value = b;
-                    option.textContent = b;
-                    blockSelect.appendChild(option);
-                });
-                blockSelect.disabled = false;
-            } else {
-                blockSelect.disabled = true;
-            }
-        });
-    }
-
-    // 2. DOM Elements
     const farmForm = document.getElementById('farmForm');
     const optimizeBtn = document.getElementById('optimizeBtn');
     const emptyState = document.getElementById('emptyState');
     const loadingState = document.getElementById('loadingState');
     const resultsContent = document.getElementById('resultsContent');
-    const formError = document.getElementById('formError'); // Moved to shared scope
+    const formError = document.getElementById('formError');
     const closeModal = document.querySelector('.close-modal');
     const viewJsonBtn = document.getElementById('viewJsonBtn');
     const jsonModal = document.getElementById('jsonModal');
@@ -116,27 +106,26 @@ document.addEventListener('DOMContentLoaded', () => {
     let lastWeatherData = {};
     let simulationDebounceTimer;
 
-    // 3. Form Submission
-    if (farmForm) {
-        farmForm.addEventListener('submit', (e) => {
-            e.preventDefault();
-            formError.classList.add('hidden');
 
-            // Extract Constraints safely
-            const state = document.getElementById('state').value;
-            const district = document.getElementById('district').value;
-            const block = document.getElementById('block').value;
-            const landSize = parseFloat(document.getElementById('landSize').value);
-            const waterAvailable = parseFloat(document.getElementById('waterAvailable').value);
-            const totalBudget = parseFloat(document.getElementById('totalBudget').value);
-            const soilPh = parseFloat(document.getElementById('soilPh').value);
+    farmForm.addEventListener('submit', (e) => {
+        e.preventDefault();
+        formError.classList.add('hidden');
 
-            // STRICT VALIDATION LAYER
-            if (!state || !district || !block || isNaN(landSize) || isNaN(waterAvailable) || isNaN(totalBudget) || landSize <= 0 || waterAvailable <= 0 || isNaN(soilPh)) {
-                formError.classList.remove('hidden');
-                formError.scrollIntoView({ behavior: 'smooth', block: 'center' });
-                return;
-            }
+
+        const state = document.getElementById('state').value;
+        const district = document.getElementById('district').value;
+        const block = document.getElementById('block').value;
+        const landSize = parseFloat(document.getElementById('landSize').value);
+        const waterAvailable = parseFloat(document.getElementById('waterAvailable').value);
+        const totalBudget = parseFloat(document.getElementById('totalBudget').value);
+        const soilPh = parseFloat(document.getElementById('soilPh').value);
+
+
+        if (!state || !district || !block || isNaN(landSize) || isNaN(waterAvailable) || isNaN(totalBudget) || landSize <= 0 || waterAvailable <= 0 || isNaN(soilPh)) {
+            formError.classList.remove('hidden');
+            formError.scrollIntoView({ behavior: 'smooth', block: 'center' });
+            return;
+        }
 
             const inputs = {
                 state,
@@ -169,7 +158,7 @@ document.addEventListener('DOMContentLoaded', () => {
         }
     }
 
-    // Toggle for Comparison Mode
+
     const compareToggle = document.getElementById('compareToggle');
     const comparisonSection = document.getElementById('comparisonSection');
 
@@ -189,7 +178,7 @@ document.addEventListener('DOMContentLoaded', () => {
         const body = document.getElementById('comparisonBody');
         const crops = [data.primary_recommendation, ...(data.alternatives || [])].slice(0, 3);
 
-        // Render Headers
+
         headRow.innerHTML = '<th>Factor</th>';
         crops.forEach((crop, idx) => {
             const th = document.createElement('th');
@@ -198,7 +187,7 @@ document.addEventListener('DOMContentLoaded', () => {
             headRow.appendChild(th);
         });
 
-        // Define Factors
+
         const factors = [
             { label: 'Net Profit', key: 'estimated_profit', format: v => `₹${Math.round(v).toLocaleString('en-IN')}` },
             { label: 'Risk Level', key: 'risk_category', format: v => v },
@@ -221,19 +210,17 @@ document.addEventListener('DOMContentLoaded', () => {
         });
     }
 
-    // 4. Optimization Engine & Weather Fetch
+
     async function startOptimization(inputs) {
-        // UI State
-        if (optimizeBtn) {
-            optimizeBtn.disabled = true;
-            optimizeBtn.textContent = "Analyzing seasonal dynamics...";
-        }
-        if (emptyState) emptyState.classList.add('hidden');
-        if (resultsContent) resultsContent.classList.add('hidden');
-        if (loadingState) loadingState.classList.remove('hidden');
+
+        optimizeBtn.disabled = true;
+        optimizeBtn.textContent = "Analyzing seasonal dynamics...";
+        emptyState.classList.add('hidden');
+        resultsContent.classList.add('hidden');
+        loadingState.classList.remove('hidden');
 
         try {
-            // Fetch Weather with a strict 1.5s timeout for performance
+
             const weatherPromise = fetchWeatherData(inputs.state);
             const timeoutPromise = new Promise(resolve => setTimeout(() => resolve(null), 1500));
 
@@ -257,7 +244,7 @@ document.addEventListener('DOMContentLoaded', () => {
             lastInputs = { ...inputs };
             lastWeatherData = { ...weatherData };
 
-            // Initialize Simulation Sliders with baseline
+
             initSimulation(inputs);
 
             try {
@@ -273,26 +260,21 @@ document.addEventListener('DOMContentLoaded', () => {
             }
         } catch (error) {
             console.error("Critical Engine Failure:", error);
-            if (loadingState) loadingState.classList.add('hidden');
-            // Show the REAL error to help diagnose
-            if (formError) {
-                formError.querySelector('span').textContent = "Error: " + error.message;
-                formError.classList.remove('hidden');
-            }
-            if (optimizeBtn) {
-                optimizeBtn.disabled = false;
-                optimizeBtn.textContent = "Run Engine";
-            }
-            if (!formError) alert("Engine Error: " + error.message);
+            loadingState.classList.add('hidden');
+
+            formError.querySelector('span').textContent = "Error: " + error.message;
+            formError.classList.remove('hidden');
+            optimizeBtn.disabled = false;
+            optimizeBtn.textContent = "Run Engine";
         }
     }
 
-    // Real implementation using Open-Meteo (No API key required)
+
     async function fetchWeatherData(stateName) {
         try {
             const coords = window.AgriData.indianStates[stateName] || { lat: 20, lon: 77 };
 
-            // Fetch current weather from Open-Meteo
+
             const url = `https://api.open-meteo.com/v1/forecast?latitude=${coords.lat}&longitude=${coords.lon}&current=temperature_2m,relative_humidity_2m,precipitation&daily=precipitation_probability_max&timezone=auto&forecast_days=1`;
 
             const response = await fetch(url);
@@ -328,30 +310,30 @@ document.addEventListener('DOMContentLoaded', () => {
     function runAlgorithm(inputs, weatherData) {
         const season = window.AgriData.getSeason(inputs.month);
 
-        // Step A: Robust Multi-Tier Filtering
+
         let feasibleCrops = window.AgriData.cropDatabase.filter(c =>
             c.seasons.includes(season) && (c.soil_types.includes(inputs.soilType) || !c.soil_types.length)
         );
 
-        // Step A2: pH Filtering & Penalty
+
         feasibleCrops = feasibleCrops.map(crop => {
             let phPenalty = 0;
-            if (inputs.soilPh < crop.ph_min) phPenalty = 0.2; // 20% penalty if too acidic
-            if (inputs.soilPh > crop.ph_max) phPenalty = 0.2; // 20% penalty if too alkaline
+            if (inputs.soilPh < crop.ph_min) phPenalty = 0.2;
+            if (inputs.soilPh > crop.ph_max) phPenalty = 0.2;
             return { ...crop, phPenalty };
         }).sort((a, b) => a.phPenalty - b.phPenalty);
 
-        // Fallback 1: Broaden to season only if strict match fails
+
         if (feasibleCrops.length === 0) {
             feasibleCrops = window.AgriData.cropDatabase.filter(c => c.seasons.includes(season));
         }
 
-        // Fallback 2: Ultimate safety fallback to prevent empty results
+
         if (feasibleCrops.length === 0) {
             feasibleCrops = window.AgriData.cropDatabase.slice(0, 5);
         }
 
-        // Cost approximation (varies heavily, standardizing to ₹35k/acre for simplicity)
+
         const avgCostPerAcre = 35000;
         let affordableAcres = inputs.totalBudget / avgCostPerAcre;
         // Do not strictly limit acres by budget to near-zero, otherwise all yields/costs scale to 0.
@@ -359,42 +341,44 @@ document.addEventListener('DOMContentLoaded', () => {
         let actualAcresToFarm = inputs.landSize;
         let actualCost = actualAcresToFarm * avgCostPerAcre;
 
-        // Step B: Calculate metrics for each crop and rank them by Profit and Weather Penalty
+
         let analyzedCrops = feasibleCrops.map(crop => {
             const totalWaterNeeded = crop.water_req * actualAcresToFarm;
 
-            // Adjust water need if it's raining (1mm rain ~ slightly less irrigation needed)
-            const rainFactor = Math.min((weatherData.rainfall * 50), crop.water_req * 0.4); // max 40% reduction
+
+            const rainFactor = Math.min((weatherData.rainfall * 50), crop.water_req * 0.4);
             const adjustedWaterNeed = Math.max(0, crop.water_req - rainFactor) * actualAcresToFarm;
 
-            // Determine water efficiency for ESG scoring
+
+            let waterConstrainedAcres = actualAcresToFarm;
             let waterEfficiency = 100;
             if (adjustedWaterNeed > inputs.waterAvailable) {
-                // If we need more water than available, flag it but don't force acres to 0.
-                waterEfficiency = 120; // Over-utilization penalty
+
+                waterConstrainedAcres = inputs.waterAvailable / Math.max(1, (crop.water_req - rainFactor));
+                waterEfficiency = 100;
             } else {
                 waterEfficiency = (totalWaterNeeded > 0) ? (adjustedWaterNeed / inputs.waterAvailable) * 100 : 0;
             }
 
-            // Weather Impact Penalty
+
             let weatherPenalty = 0;
             let impact_message = "Optimal growing temperature detected.";
             if (weatherData.temp > (crop.temp_max || 40)) {
-                weatherPenalty = 0.3; // 30% yield drop due to heat stress
+                weatherPenalty = 0.3;
                 impact_message = `Heat stress alert. ${crop.name} yield may reduce by 30%. Increase irrigation.`;
             } else if (weatherData.temp < (crop.temp_min || 5)) {
-                weatherPenalty = 0.25; // 25% yield drop due to cold
+                weatherPenalty = 0.25;
                 impact_message = `Sub-optimal temperatures detected. Expect slight delayed growth for ${crop.name}.`;
             }
 
-            // Final bounds based on chosen land (don't strictly limit by water/budget to prevent zeroing output)
-            let finalAcres = actualAcresToFarm;
+
+            let finalAcres = Math.min(actualAcresToFarm, waterConstrainedAcres);
             let finalCost = finalAcres * avgCostPerAcre;
             let finalYield = (crop.yield_per_acre * finalAcres) * (1 - weatherPenalty) * (1 - (crop.phPenalty || 0));
             let revenue = finalYield * crop.est_price;
             let profit = revenue - finalCost;
 
-            // Risk Categorization (Heuristic)
+
             let riskVal = (weatherPenalty + (crop.phPenalty || 0) + (1 - crop.resilience)) / 3;
             let risk_category = "Low";
             if (riskVal > 0.4) risk_category = "High";
@@ -402,11 +386,11 @@ document.addEventListener('DOMContentLoaded', () => {
 
             let roi = finalCost > 0 ? (profit / finalCost) * 100 : 0;
 
-            // ESG Metrics
+
             const carbonFootprint = finalYield * 1000 * (crop.carbon_per_kg || 1.0);
             const groundwaterImpact = (finalAcres * crop.water_req) * (crop.groundwater_impact || 0.5);
 
-            // Sustainability Score (0-100)
+
             let sScore = (crop.resilience * 40) + (waterEfficiency * 0.3) + (crop.organic_bonus || 5);
             const esgConsts = window.AgriData.ESG_CONSTANTS || { CARBON_BENCHMARK: 1500, ORGANIC_SCORE_MAX: 100 };
             const carbonPenalty = finalAcres > 0 ?
@@ -433,14 +417,14 @@ document.addEventListener('DOMContentLoaded', () => {
             };
         });
 
-        // Price Forecasting Logic
+
         const forecastMonthRaw = (parseInt(inputs.month) + 2) % 12;
-        const forecastMonth = forecastMonthRaw === 0 ? 11 : forecastMonthRaw - 1; // Safe 0-indexed array index
-        const currentMonthIdx = Math.max(0, parseInt(inputs.month) - 1); // Safe 0-indexed
+        const forecastMonth = forecastMonthRaw === 0 ? 11 : forecastMonthRaw - 1;
+        const currentMonthIdx = Math.max(0, parseInt(inputs.month) - 1);
 
         analyzedCrops = analyzedCrops.map(crop => {
             const mandiData = window.AgriData.mandiHistoricalAverages[crop.name] ||
-                window.AgriData.mandiHistoricalAverages["Wheat"]; // fallback to wheat trend
+                window.AgriData.mandiHistoricalAverages["Wheat"];
             const currentMandiPrice = (mandiData.trend && mandiData.trend[currentMonthIdx]) || mandiData.basePrice;
             const futureMandiPrice = (mandiData.trend && mandiData.trend[forecastMonth]) || mandiData.basePrice;
 
@@ -459,7 +443,7 @@ document.addEventListener('DOMContentLoaded', () => {
             };
         });
 
-        // Select Top 3 with deep safety
+
         const top3 = analyzedCrops.length > 0 ? analyzedCrops.slice(0, 3) : [];
         const bestCrop = top3.length > 0 ? top3[0] : {
             name: "Diversified Cover",
@@ -482,8 +466,8 @@ document.addEventListener('DOMContentLoaded', () => {
             water_efficiency: 95
         };
 
-        // Format final API payload schema requirement
-        // Format final API payload schema requirement
+
+
         const result = {
             location: {
                 state: inputs.state,
@@ -492,7 +476,7 @@ document.addEventListener('DOMContentLoaded', () => {
                 village: inputs.village || "N/A"
             },
             season: season,
-            risk_level: "Medium", // Will be updated by weather render
+            risk_level: "Medium",
             primary_recommendation: {
                 name: bestCrop.name,
                 yield_per_acre: `${parseFloat(bestCrop.yield_per_acre || 0).toFixed(1)} Tons`,
@@ -532,9 +516,9 @@ document.addEventListener('DOMContentLoaded', () => {
             weather_impact_desc: bestCrop.impact_message || "Current meteorological conditions are stable.",
             reasoning: `Based on the upcoming ${season} season and average patterns in ${inputs.district}, ${bestCrop.name} and ${top3[1]?.name || 'alternatives'} are highly viable. Since ${bestCrop.name} matches your available water capacity and local mandi trends favor this crop, it is the primary recommendation. Leverage ${bestCrop.water_efficiency > 80 ? "Drip Irrigation" : "Surface Irrigation"} to optimize your groundwater levels.`,
 
-            // ESG results will be appended below to avoid duplication
 
-            // --- NEW: Government Subsidies ---
+
+
             subsidies: window.AgriData.governmentSchemes.filter(scheme => scheme.eligibility({
                 state: inputs.state,
                 land: inputs.landSize,
@@ -542,7 +526,7 @@ document.addEventListener('DOMContentLoaded', () => {
                 water_daily: inputs.waterAvailable
             })),
 
-            // --- NEW: Market Price Risk ---
+
             market_risk: {
                 level: bestCrop.volatility < 0.2 ? "Low" : (bestCrop.volatility < 0.4 ? "Moderate" : "High"),
                 stability_score: ((1 - bestCrop.volatility) * 10).toFixed(1),
@@ -553,17 +537,17 @@ document.addEventListener('DOMContentLoaded', () => {
                         : "CONTRACT FARMING: High volatility region. Secure a fixed-price contract with food processors to hedge against sudden crashes.")
             },
 
-            // --- NEW: Break-even Analysis ---
+
             break_even: {
                 cost_per_acre: (bestCrop.estimated_cost / (bestCrop.acres_allocated || 1)).toFixed(0),
-                break_even_price: (bestCrop.estimated_cost / (bestCrop.estimated_yield * 10 + 0.1)).toFixed(0), // yield in tons to q (1 ton = 10q)
+                break_even_price: (bestCrop.estimated_cost / (bestCrop.estimated_yield * 10 + 0.1)).toFixed(0),
                 sensitivity: {
                     status: (bestCrop.mandi_current > (bestCrop.estimated_cost / (bestCrop.estimated_yield * 10 + 0.1)) * 1.2) ? 'Safe' : 'Risk',
                     diff_pct: (((bestCrop.mandi_current / (bestCrop.estimated_cost / (bestCrop.estimated_yield * 10 + 0.1) + 0.1)) - 1) * 100).toFixed(0)
                 }
             },
 
-            // --- NEW: Soil Health & Fertilizer Planner ---
+
             soil_health: {
                 ph: inputs.soilPh,
                 status: inputs.soilPh < 5.5 ? 'Acidic' : (inputs.soilPh > 7.5 ? 'Alkaline' : 'Optimal'),
@@ -576,18 +560,18 @@ document.addEventListener('DOMContentLoaded', () => {
             }
         };
 
-        // Step C: Calculate Climate Deviation & Probability
+
         const stateRainData = window.AgriData.historicalRainfall[inputs.state] || window.AgriData.historicalRainfall["Default"];
         const histRain = stateRainData[season] || 500;
-        const forecastRain = weatherData.rainfall * 30; // 30-day extrapolation for deviation logic
+        const forecastRain = weatherData.rainfall * 30;
         const deviation = ((forecastRain - histRain) / Math.max(1, histRain)) * 100;
 
         let failureProb = 0;
-        if (deviation < -30) failureProb += 25; // Drought risk
-        if (deviation > 30) failureProb += 15; // Flood/Root rot risk
-        if (weatherData.temp > 35) failureProb += 10; // Heat stress
+        if (deviation < -30) failureProb += 25;
+        if (deviation > 30) failureProb += 15;
+        if (weatherData.temp > 35) failureProb += 10;
 
-        // Adjust failure prob by crop resilience (higher resilience = lower failure)
+
         failureProb = Math.max(0, failureProb * (1.5 - (bestCrop.resilience || 0.5))).toFixed(0);
 
         const riskAdjYield = (bestCrop.estimated_yield * (1 - (failureProb / 100))).toFixed(1);
@@ -604,7 +588,7 @@ document.addEventListener('DOMContentLoaded', () => {
                     : "STABLE: Seasonal parameters are optimal for your selected portfolio.")
         };
 
-        // --- NEW: Sustainability Intelligence ---
+
         result.sustainability = {
             score: bestCrop.sustainability_score,
             carbon_footprint: `${Math.round(bestCrop.carbon_footprint).toLocaleString('en-IN')} kg CO2e`,
@@ -613,7 +597,7 @@ document.addEventListener('DOMContentLoaded', () => {
             investor_rating: bestCrop.sustainability_score > 80 ? "AAA (High)" : (bestCrop.sustainability_score > 60 ? "AA (Stable)" : "B (Requires Offset)")
         };
 
-        // --- NEW: Farmer Credit Score Model ---
+
         const cc = window.AgriData.creditConstants;
         const equityScore = Math.min(1, inputs.landSize / 10) * 1000 * cc.equity_weight;
         const repaymentScore = Math.min(1, bestCrop.estimated_profit / 200000) * 1000 * cc.repayment_weight;
@@ -631,17 +615,17 @@ document.addEventListener('DOMContentLoaded', () => {
                     : "REVIEW REQUIRED: Score impacted by resource stress. Banks may require additional collateral or weather-insurance.")
         };
 
-        // --- NEW: Mandi Connect Logic ---
+
         const hub = window.AgriData.apmcHubs[inputs.state] || window.AgriData.apmcHubs["Default"];
-        const transCost = hub.dist_km * hub.transport_rate * (bestCrop.estimated_yield * 10); // rate per quintal per km approx
+        const transCost = hub.dist_km * hub.transport_rate * (bestCrop.estimated_yield * 10);
 
         result.mandi_connect = {
             nearby_apmc: `${hub.name} (${hub.dist_km} km)`,
             transport_cost: `₹${Math.round(transCost).toLocaleString('en-IN')}`,
-            best_district: inputs.district // Simplification: current district is often best for local sale
+            best_district: inputs.district
         };
 
-        // Sustainability already handled above
+
 
         // --- NEW: Government Subsidies Filter ---
         // Expose crop name to inputs context for scheme evaluation
@@ -657,7 +641,7 @@ document.addEventListener('DOMContentLoaded', () => {
         return result;
     }
 
-    // 5. Output Rendering
+
     function showResults(data, weather, inputs) {
         if (loadingState) loadingState.classList.add('hidden');
         if (resultsContent) resultsContent.classList.remove('hidden');
@@ -666,13 +650,13 @@ document.addEventListener('DOMContentLoaded', () => {
             optimizeBtn.textContent = "Run Engine";
         }
 
-        // Reset Comparison Toggle
+
         const compareToggle = document.getElementById('compareToggle');
         const comparisonSection = document.getElementById('comparisonSection');
         if (compareToggle) compareToggle.checked = false;
         if (comparisonSection) comparisonSection.classList.add('hidden');
 
-        // Defensive checks for rendering values
+
         const safeVal = (val, suffix = '', fallback = '--') => {
             if (val === undefined || val === null) return fallback;
             if (typeof val === 'number') {
@@ -683,7 +667,6 @@ document.addEventListener('DOMContentLoaded', () => {
             return `${val}${suffix}`;
         };
 
-        // Safe DOM setter to avoid "Cannot set properties of null" when an id is missing
         const setTextIfExists = (id, value) => {
             const el = document.getElementById(id);
             if (el) el.textContent = value;
@@ -691,10 +674,9 @@ document.addEventListener('DOMContentLoaded', () => {
 
         const rec = data.primary_recommendation;
 
-        // Render Location Summary (safe)
         setTextIfExists('resultLocation', `${inputs.state} > ${inputs.district} > ${inputs.block}`);
 
-        // Render Mandi Intelligence (safe)
+
         setTextIfExists('mandiCurrent', `₹${safeVal(rec.mandi_current)}/q`);
         setTextIfExists('mandiForecast', `₹${safeVal(rec.mandi_forecast)}/q`);
         setTextIfExists('mandiAdvisor', rec.mandi_advisor || "No specific market advice available.");
@@ -704,7 +686,7 @@ document.addEventListener('DOMContentLoaded', () => {
             else mandiAdvEl.style.color = "var(--text-muted)";
         }
 
-        // Render Weather Panel (safe)
+
         setTextIfExists('wTemp', safeVal(weather.temp, '°C'));
         setTextIfExists('wHumid', safeVal(weather.humidity, '%'));
         setTextIfExists('wRain', safeVal(weather.rainfall, ' mm'));
@@ -724,8 +706,8 @@ document.addEventListener('DOMContentLoaded', () => {
         }
         if (wImpact) wImpact.textContent = data.weather_impact_desc || "Weather conditions are stable.";
 
-        // Dom Updates with deep safety
-        if (!rec) return; // Critical stop if rec is missing
+
+        if (!rec) return;
         setTextIfExists('primaryCrop', rec.name || '--');
         setTextIfExists('yieldValue', safeVal(rec.total_yield));
         setTextIfExists('waterEffValue', safeVal(rec.water_efficiency));
@@ -735,15 +717,15 @@ document.addEventListener('DOMContentLoaded', () => {
 
         setTextIfExists('profitMarginValue', safeVal(rec.profit_margin));
 
-        // Add Irrigation Strategy Strategy (safe)
+
         setTextIfExists('irrigationValue', data.irrigation_strategy || "Standard Irrigation");
 
-        // -- NEW ALLOCATION LAYOUT MATH --
+
         const usedAcres = parseFloat(rec.acres_allocated || 0);
         const totalAcres = inputs.landSize;
         const landPct = totalAcres > 0 ? (usedAcres / totalAcres) * 100 : 0;
 
-        // Multi-Crop Portfolio Distribution logic for visual
+
         let p1 = 60, p2 = 25, p3 = 15;
         if (Array.isArray(data.alternatives)) {
             if (data.alternatives.length === 1) { p1 = 70; p2 = 30; p3 = 0; }
@@ -790,259 +772,8 @@ document.addEventListener('DOMContentLoaded', () => {
             else if (waterPct > 75) waterBar.classList.add('warning');
         }
 
-        // --- NEW: 10x10 Farm Grid Initialization ---
-        const farmGridContainer = document.getElementById('farm-grid');
-        if (farmGridContainer) {
-            farmGridContainer.innerHTML = ''; // Clear previous
-            const totalCells = 100;
 
-            // Calculate number of cells for each crop based on land utilization
-            // We use the same p1, p2, p3 proportions but scaled to the actual land utilized percentage (landPct)
-            const countP1 = Math.floor((p1 * landPct) / 100);
-            const countP2 = Math.floor((p2 * landPct) / 100);
-            const countP3 = Math.floor((p3 * landPct) / 100);
-            const countUnallocated = totalCells - (countP1 + countP2 + countP3);
 
-            // Create array of cell classes
-            let distribution = [];
-            for (let i = 0; i < countP1; i++) distribution.push('wheat'); // Primary uses wheat color style
-            for (let i = 0; i < countP2; i++) distribution.push('corn');  // Alt1 uses corn color style
-            for (let i = 0; i < countP3; i++) distribution.push('soy');   // Alt2 uses soy color style
-            while (distribution.length < totalCells) distribution.push('unallocated');
-
-            // Sort to group them visually
-            distribution.sort((a, b) => {
-                const order = { 'unallocated': 0, 'wheat': 1, 'corn': 2, 'soy': 3 };
-                return order[a] - order[b];
-            });
-
-            // Create DOM elements and animate
-            distribution.forEach((cellType, index) => {
-                const cell = document.createElement('div');
-                cell.className = 'grid-cell'; // Start neutral
-                farmGridContainer.appendChild(cell);
-
-                // Animate appearance
-                setTimeout(() => {
-                    if (cellType !== 'unallocated') {
-                        cell.className = `grid-cell cell-${cellType}`;
-                    }
-                    cell.style.transform = 'scale(1)';
-                    cell.style.opacity = '1';
-                }, index * 10); // 10ms stagger
-            });
-        }
-        // ---------------------------------
-
-        /* =========================================================================
-           IOT SENSOR INTEGRATION (HACKATHON FEATURE)
-           ========================================================================= */
-        // Extract primary crop for IoT alerts
-        const primaryCropForIoT = rec.name || 'N/A';
-        setTextIfExists('outCropName', primaryCropForIoT);
-
-        const sensorDataStr = sessionStorage.getItem('agri_sensor_data');
-        if (sensorDataStr) {
-            try {
-                const sensorData = JSON.parse(sensorDataStr);
-                const dashboardContainer = document.getElementById('iotDashboardContainer');
-
-                if (sensorData && sensorData.length > 0 && dashboardContainer) {
-                    dashboardContainer.style.display = 'block';
-
-                    // 1. Process Data for Charts (Sub-sample for performance if needed, or take daily averages)
-                    // For 336 hourly points, let's take every 12th point (twice a day) to keep the chart clean
-                    const chartData = sensorData.filter((_, i) => i % 12 === 0);
-                    const labels = chartData.map(d => {
-                        const date = new Date(d.timestamp);
-                        return `${date.getMonth() + 1}/${date.getDate()} ${date.getHours()}:00`;
-                    });
-
-                    // 2. Render Moisture Chart
-                    const ctxMoisture = document.getElementById('moistureChart');
-                    if (ctxMoisture) {
-                        new Chart(ctxMoisture, {
-                            type: 'line',
-                            data: {
-                                labels: labels,
-                                datasets: [{
-                                    label: 'Moisture (%)',
-                                    data: chartData.map(d => d.moisture),
-                                    borderColor: '#3b82f6',
-                                    backgroundColor: 'rgba(59, 130, 246, 0.1)',
-                                    tension: 0.4,
-                                    fill: true
-                                }]
-                            },
-                            options: {
-                                responsive: true,
-                                maintainAspectRatio: false,
-                                plugins: { legend: { labels: { color: '#cbd5e1' } } },
-                                scales: {
-                                    x: { grid: { color: 'rgba(255,255,255,0.05)' }, ticks: { color: '#94a3b8' } },
-                                    y: { grid: { color: 'rgba(255,255,255,0.05)' }, ticks: { color: '#94a3b8' } }
-                                }
-                            }
-                        });
-                    }
-
-                    // 3. Render Nutrient/pH Chart
-                    const ctxNutrient = document.getElementById('nutrientChart');
-                    if (ctxNutrient) {
-                        new Chart(ctxNutrient, {
-                            type: 'line',
-                            data: {
-                                labels: labels,
-                                datasets: [
-                                    {
-                                        label: 'pH Level',
-                                        data: chartData.map(d => d.ph),
-                                        borderColor: '#10b981',
-                                        tension: 0.4,
-                                        yAxisID: 'y'
-                                    },
-                                    {
-                                        label: 'Nitrogen (ppm)',
-                                        data: chartData.map(d => d.nitrogen),
-                                        borderColor: '#f59e0b',
-                                        borderDash: [5, 5],
-                                        tension: 0.4,
-                                        yAxisID: 'y1'
-                                    }
-                                ]
-                            },
-                            options: {
-                                responsive: true,
-                                maintainAspectRatio: false,
-                                plugins: { legend: { labels: { color: '#cbd5e1' } } },
-                                scales: {
-                                    x: { grid: { color: 'rgba(255,255,255,0.05)' }, ticks: { color: '#94a3b8' } },
-                                    y: { type: 'linear', display: true, position: 'left', grid: { color: 'rgba(255,255,255,0.05)' }, ticks: { color: '#10b981' } },
-                                    y1: { type: 'linear', display: true, position: 'right', grid: { drawOnChartArea: false }, ticks: { color: '#f59e0b' } }
-                                }
-                            }
-                        });
-                    }
-
-                    // 4. Rule-Based Smart Alerts Logic
-                    // Based on precise SoilFusion Agronomic Thresholds
-                    const alertsList = document.getElementById('iotAlertsList');
-                    let plantingScore = 85; // Base score
-                    const alerts = [];
-
-                    // Calculate recent 24h average for current conditions
-                    const recentData = sensorData.slice(-24);
-                    const avgMoisture = recentData.reduce((sum, d) => sum + parseFloat(d.moisture), 0) / 24;
-                    const avgPH = recentData.reduce((sum, d) => sum + parseFloat(d.ph), 0) / 24;
-                    const avgNitrogen = recentData.reduce((sum, d) => sum + parseFloat(d.nitrogen), 0) / 24;
-                    const avgTemp = recentData.reduce((sum, d) => sum + parseFloat(d.temperature), 0) / 24;
-
-                    // Calculate 7-day rolling averages (last 168 hours) for Anomaly Detection
-                    const last7Days = sensorData.slice(-168);
-                    const avgMoisture7d = last7Days.reduce((sum, d) => sum + parseFloat(d.moisture), 0) / 168;
-
-                    // Evaluate Moisture (Optimal: 25-40%)
-                    if (avgMoisture < 15) {
-                        alerts.push({ type: 'critical', title: 'Severe Drought Stress', desc: `Moisture critically low (${avgMoisture.toFixed(1)}%). Immediate irrigation required.` });
-                        plantingScore -= 30;
-                    } else if (avgMoisture > 50) {
-                        alerts.push({ type: 'critical', title: 'Waterlogging Risk', desc: `Moisture critically high (${avgMoisture.toFixed(1)}%). Risk of root asphyxiation.` });
-                        plantingScore -= 30;
-                    } else if ((avgMoisture >= 15 && avgMoisture < 25) || (avgMoisture > 40 && avgMoisture <= 50)) {
-                        alerts.push({ type: 'warning', title: 'Suboptimal Moisture', desc: `Moisture (${avgMoisture.toFixed(1)}%) in caution zone. Monitor hydration.` });
-                        plantingScore -= 10;
-                    }
-
-                    // Anomaly Rule: Sudden change >20% from 7-day rolling average
-                    const moistureChangePct = Math.abs((avgMoisture - avgMoisture7d) / avgMoisture7d);
-                    if (moistureChangePct > 0.20) {
-                        alerts.push({ type: 'warning', title: 'Moisture Anomaly Detected', desc: `Sudden >20% fluctuation in moisture compared to 7-day average. Verify sensors or irrigation.` });
-                        plantingScore -= 15;
-                    }
-
-                    // Evaluate pH (Optimal: 6.0-7.5)
-                    if (avgPH < 5.5) {
-                        alerts.push({ type: 'critical', title: 'High Acidity', desc: `pH critically low (${avgPH.toFixed(1)}). Soil too acidic, severe nutrient lockout risk.` });
-                        plantingScore -= 25;
-                    } else if (avgPH > 8.0) {
-                        alerts.push({ type: 'critical', title: 'High Alkalinity', desc: `pH critically high (${avgPH.toFixed(1)}). Immediate corrective action required.` });
-                        plantingScore -= 25;
-                    } else if ((avgPH >= 5.5 && avgPH < 6.0) || (avgPH > 7.5 && avgPH <= 8.0)) {
-                        alerts.push({ type: 'warning', title: 'Marginal pH', desc: `Current pH is ${avgPH.toFixed(1)}. Approaching stress levels.` });
-                        plantingScore -= 10;
-                    }
-
-                    // Evaluate Nitrogen (Optimal: 200-500 ppm)
-                    if (avgNitrogen < 100) {
-                        alerts.push({ type: 'critical', title: 'Severe Nitrogen Deficiency', desc: `Nitrogen depleted (${avgNitrogen.toFixed(0)} ppm). Growth severely limited.` });
-                        plantingScore -= 25;
-                    } else if (avgNitrogen > 800) {
-                        alerts.push({ type: 'critical', title: 'Nitrogen Excess', desc: `Nitrogen too high (${avgNitrogen.toFixed(0)} ppm). Fertilizer burn risk.` });
-                        plantingScore -= 25;
-                    } else if ((avgNitrogen >= 100 && avgNitrogen < 200) || (avgNitrogen > 500 && avgNitrogen <= 800)) {
-                        alerts.push({ type: 'warning', title: 'Suboptimal Nitrogen', desc: `Nitrogen level (${avgNitrogen.toFixed(0)} ppm) requires attention.` });
-                        plantingScore -= 10;
-                    }
-
-                    // Evaluate Temp (Optimal: 15-30C)
-                    if (avgTemp < 10 || avgTemp > 40) {
-                        alerts.push({ type: 'critical', title: 'Extreme Soil Temperature', desc: `Soil temp (${avgTemp.toFixed(1)}°C) limits growth.` });
-                        plantingScore -= 15;
-                    } else if ((avgTemp >= 10 && avgTemp < 15) || (avgTemp > 30 && avgTemp <= 40)) {
-                        alerts.push({ type: 'warning', title: 'Marginal Temperature', desc: `Soil temp (${avgTemp.toFixed(1)}°C) is outside ideal range.` });
-                        plantingScore -= 5;
-                    }
-
-                    // Populate Alerts HTML
-                    if (alerts.length === 0) {
-                        alertsList.innerHTML = `
-                            <div class="iot-alert-item info">
-                                <span class="iot-alert-title">Optimal Soil Health</span>
-                                <span class="iot-alert-desc">All parameters (pH, Moisture, N, Temp) are stable within ideal agronomic ranges for ${primaryCropForIoT}.</span>
-                            </div>
-                        `;
-                    } else {
-                        alertsList.innerHTML = alerts.map(a => `
-                            <div class="iot-alert-item ${a.type}">
-                                <span class="iot-alert-title">${a.title}</span>
-                                <span class="iot-alert-desc">${a.desc}</span>
-                            </div>
-                        `).join('');
-                    }
-
-                    // 5. Planting Window Recommendation
-                    const plantingContainer = document.getElementById('iotPlantingWindow');
-                    let windowHtml = '';
-
-                    if (plantingScore >= 80) {
-                        windowHtml = `
-                            <div class="planting-score">${plantingScore}</div>
-                            <div class="planting-label">High Confidence</div>
-                            <div class="planting-suggestion" style="color: var(--status-safe);">Excellent conditions. Plant within next 3-5 days.</div>
-                        `;
-                    } else if (plantingScore >= 50) {
-                        windowHtml = `
-                            <div class="planting-score" style="color: var(--status-moderate);">${plantingScore}</div>
-                            <div class="planting-label">Moderate Confidence</div>
-                            <div class="planting-suggestion" style="color: var(--status-moderate);">Hold off planting. Address soil alerts first.</div>
-                        `;
-                    } else {
-                        windowHtml = `
-                            <div class="planting-score" style="color: var(--status-critical);">${plantingScore}</div>
-                            <div class="planting-label">Low Confidence</div>
-                            <div class="planting-suggestion" style="color: var(--status-critical);">Unsafe to plant. High risk of crop failure.</div>
-                        `;
-                    }
-                    plantingContainer.innerHTML = windowHtml;
-                }
-            } catch (e) {
-                console.error("Error parsing sensor data for dashboard:", e);
-            }
-        }
-
-        // --- End IoT Integration ---
-
-        // Render ESG & Sustainability Intelligence
         const sunData = data.sustainability;
         const sunCard = document.getElementById('sustainabilityCard');
         const esgBadge = document.getElementById('esgBadge');
@@ -1058,7 +789,7 @@ document.addEventListener('DOMContentLoaded', () => {
         const esgAdviceText = document.getElementById('esgAdviceText');
 
         if (sunCard && sunData) {
-            // Update Text & Bars
+
             if (sunScoreText) sunScoreText.textContent = `${sunData.score}%`;
             if (esgCircle) {
                 // Defer to allow CSS transition to paint from 0
@@ -1090,7 +821,6 @@ document.addEventListener('DOMContentLoaded', () => {
                 setTimeout(() => { organicBar.style.width = `${organicPct}%`; }, 400);
             }
 
-            // Reset classes
             sunCard.className = 'sustainability-card glass-panel mt-4 p-4 animate-in';
             const adviceBox = document.getElementById('esgAdviceBox');
             if (adviceBox) adviceBox.className = 'conservation-box';
@@ -1112,7 +842,7 @@ document.addEventListener('DOMContentLoaded', () => {
             }
         }
 
-        // --- NEW: Render Government Subsidies ---
+
         const subsidyList = document.getElementById('subsidyList');
         if (subsidyList && data.subsidies) {
             if (data.subsidies.length > 0) {
@@ -1130,7 +860,6 @@ document.addEventListener('DOMContentLoaded', () => {
             }
         }
 
-        // --- NEW: Render Market Price Risk ---
         const riskData = data.market_risk;
         const riskLevel = document.getElementById('riskLevel');
         const stabilityScore = document.getElementById('stabilityScore');
@@ -1141,7 +870,7 @@ document.addEventListener('DOMContentLoaded', () => {
             riskLevel.textContent = riskData.level || 'Moderate';
             stabilityScore.textContent = `${riskData.stability_score || '--'}/10`;
 
-            // Reset classes
+
             riskActionBox.className = 'conservation-box';
 
             if (riskData.level === 'High') {
@@ -1156,7 +885,7 @@ document.addEventListener('DOMContentLoaded', () => {
             riskActionText.textContent = riskData.strategy || 'No specific market strategy available.';
         }
 
-        // --- NEW: Render Break-even Analysis ---
+
         const breakEvenData = data.break_even;
         const costPerAcre = document.getElementById('costPerAcre');
         const breakEvenPrice = document.getElementById('breakEvenPrice');
@@ -1178,7 +907,7 @@ document.addEventListener('DOMContentLoaded', () => {
             }
         }
 
-        // --- NEW: Render Soil Health & Fertilizer Planner ---
+
         const soilData = data.soil_health;
         const phStatus = document.getElementById('phStatus');
         const nutrientAlert = document.getElementById('nutrientAlert');
@@ -1192,7 +921,7 @@ document.addEventListener('DOMContentLoaded', () => {
                 ? `Deficient: ${soilData.nutrients.deficiencies.join(', ')}`
                 : 'Stable';
 
-            // Color coding pH Status
+
             if (soilData.status === 'Optimal') {
                 phStatus.style.color = 'var(--status-safe)';
                 soilHealthCard.classList.remove('critical', 'moderate');
@@ -1201,7 +930,7 @@ document.addEventListener('DOMContentLoaded', () => {
                 soilHealthCard.classList.add(soilData.status === 'Acidic' ? 'moderate' : 'critical');
             }
 
-            // Render Schedule
+
             fertilizerSchedule.innerHTML = soilData.schedule.map(s => `
                 <div class="mandi-stat" style="padding: 0.5rem; border-bottom: 1px solid rgba(255,255,255,0.05);">
                     <div style="display: flex; justify-content: space-between; align-items: center;">
@@ -1214,7 +943,6 @@ document.addEventListener('DOMContentLoaded', () => {
             soilAdviceText.textContent = soilData.nutrients ? soilData.nutrients.suggestion : "Maintaining soil health...";
         }
 
-        // --- NEW: Render Climate Resilience Engine ---
         const climateData = data.climate;
         const rainDeviation = document.getElementById('rainDeviation');
         const failureProb = document.getElementById('failureProb');
@@ -1240,7 +968,7 @@ document.addEventListener('DOMContentLoaded', () => {
             climateStabilityText.textContent = climateData.advice || "Weather parameters are within normal range.";
         }
 
-        // --- NEW: Render Farmer Credit & Mandi Connect ---
+
         const creditData = data.credit;
         const creditScore = document.getElementById('creditScore');
         const loanStatus = document.getElementById('loanStatus');
@@ -1264,7 +992,7 @@ document.addEventListener('DOMContentLoaded', () => {
             bestDistrictTag.textContent = mandiConn.best_district || '--';
         }
 
-        // --- NEW: WhatsApp SMS Alert Simulation ---
+
         const cropName = data.primary_recommendation && data.primary_recommendation.name ? data.primary_recommendation.name : 'your crop';
         const alertEl = document.getElementById('whatsappAlertBox');
         if (alertEl) {
@@ -1273,14 +1001,12 @@ document.addEventListener('DOMContentLoaded', () => {
         }
 
 
-        // Add AI Reasoning text
-        const aiReasoningEl = document.getElementById('aiReasoning');
-        if (aiReasoningEl) aiReasoningEl.textContent = data.reasoning;
 
-        // Crop Suggestions Grid
+        document.getElementById('aiReasoning').textContent = data.reasoning;
+
+
         const suggestionsBox = document.getElementById('cropSuggestions');
-        if (suggestionsBox) {
-            suggestionsBox.innerHTML = ''; // Clear previous
+        suggestionsBox.innerHTML = '';
 
             const alternatives = Array.isArray(data.alternatives) ? data.alternatives : [];
             const allTopCrops = rec ? [rec, ...alternatives] : alternatives;
@@ -1294,40 +1020,36 @@ document.addEventListener('DOMContentLoaded', () => {
             });
         }
 
-        const jsonOutputEl = document.getElementById('jsonOutput');
-        if (jsonOutputEl) {
-            jsonOutputEl.textContent = JSON.stringify({
-                location: data.location,
-                season: data.season,
-                risk_level: data.risk_level,
-                primary_recommendation: data.primary_recommendation,
-                alternatives: data.alternatives,
-                irrigation_strategy: data.irrigation_strategy,
-                reasoning: data.reasoning
-            }, null, 2);
-        }
 
-        // Fade in
-        if (resultsContent) {
-            resultsContent.style.opacity = "0";
-            setTimeout(() => {
-                resultsContent.style.transition = "opacity 0.5s ease";
-                resultsContent.style.opacity = "1";
-            }, 50);
-        }
+        document.getElementById('jsonOutput').textContent = JSON.stringify({
+            location: data.location,
+            season: data.season,
+            risk_level: data.risk_level,
+            primary_recommendation: data.primary_recommendation,
+            alternatives: data.alternatives,
+            irrigation_strategy: data.irrigation_strategy,
+            reasoning: data.reasoning
+        }, null, 2);
 
-        // --- NEW: Trigger Standalone Crop Library ---
+
+        resultsContent.style.opacity = "0";
+        setTimeout(() => {
+            resultsContent.style.transition = "opacity 0.5s ease";
+            resultsContent.style.opacity = "1";
+        }, 50);
+
+
         generateCropLibrary(data.location.state, inputs.month.toString(), inputs.soilType);
     }
 
-    // --- NEW: Standalone Informational Module ---
+
     function generateCropLibrary(stateName, monthString, soilType) {
         const season = window.AgriData.getSeason(monthString);
 
         const libBadge = document.getElementById('libSeasonBadge');
         if (libBadge) libBadge.textContent = `Detected Season: ${season}`;
 
-        // Step A: Robust Multi-Tier Filtering (Same logic as engine)
+
         let libraryCrops = window.AgriData.cropDatabase.filter(c =>
             c.seasons.includes(season) && (c.soil_types.includes(soilType) || !c.soil_types.length)
         );
@@ -1359,7 +1081,7 @@ document.addEventListener('DOMContentLoaded', () => {
             `;
             libList.appendChild(div);
         });
-        // Generate JSON for this library view
+
         const libraryJSON = {
             detected_season: season,
             location: stateName,
@@ -1375,12 +1097,10 @@ document.addEventListener('DOMContentLoaded', () => {
         console.log("Crop Library JSON:", libraryJSON);
     }
 
-    // Modal Handling for JSON Payload
-    if (viewJsonBtn) {
-        viewJsonBtn.addEventListener('click', () => {
-            if (jsonModal) jsonModal.classList.remove('hidden');
-        });
-    }
+
+    viewJsonBtn.addEventListener('click', () => {
+        jsonModal.classList.remove('hidden');
+    });
 
     if (closeModal) {
         closeModal.addEventListener('click', () => {
@@ -1393,20 +1113,20 @@ document.addEventListener('DOMContentLoaded', () => {
             jsonModal.classList.add('hidden');
         }
     });
-    // --- NEW: "What If" Simulation Engine ---
+
     function initSimulation(inputs) {
         const simBudget = document.getElementById('simBudget');
         const simWater = document.getElementById('simWater');
         const simLand = document.getElementById('simLand');
 
-        // Set baseline values
+
         simBudget.value = inputs.totalBudget;
         simWater.value = inputs.waterAvailable;
         simLand.value = inputs.landSize;
 
         updateSimLabels();
 
-        // Listeners with debounce
+
         [simBudget, simWater, simLand].forEach(el => {
             el.addEventListener('input', () => {
                 updateSimLabels();
@@ -1441,7 +1161,7 @@ document.addEventListener('DOMContentLoaded', () => {
 
         if (!baseline || !sim) return;
 
-        // 1. Profit Impact
+
         const profitVal = document.getElementById('simProfitVal');
         const profitDelta = document.getElementById('simProfitDelta');
         const diff = sim.estimated_profit - baseline.estimated_profit;
@@ -1451,26 +1171,24 @@ document.addEventListener('DOMContentLoaded', () => {
         profitDelta.textContent = diff === 0 ? "Baseline" : `${diff > 0 ? '+' : ''}${Math.round(diff).toLocaleString('en-IN')}`;
         profitDelta.className = `impact-delta ${diff >= 0 ? (diff === 0 ? '' : 'delta-pos') : 'delta-neg'}`;
 
-        // Dynamic Card Glow Based on Profit
         const simCard = document.querySelector('.simulation-card');
         simCard.classList.remove('glow-positive', 'glow-negative');
         if (diff > 0) simCard.classList.add('glow-positive');
         else if (diff < -1000) simCard.classList.add('glow-negative');
 
-        // 2. Risk Shift
         const riskVal = document.getElementById('simRiskVal');
         const riskDelta = document.getElementById('simRiskDelta');
         riskVal.textContent = sim.risk_category;
 
         if (sim.risk_category !== baseline.risk_category) {
             riskDelta.textContent = `Shift from ${baseline.risk_category}`;
-            riskDelta.className = "impact-delta delta-neg"; // Usually any shift from baseline risk in sim is a "change"
+            riskDelta.className = "impact-delta delta-neg";
         } else {
             riskDelta.textContent = "No Change";
             riskDelta.className = "impact-delta";
         }
 
-        // 3. Best Crop Change
+
         const cropVal = document.getElementById('simCropVal');
         const cropDelta = document.getElementById('simCropDelta');
         const alertBox = document.getElementById('cropChangeAlert');
@@ -1488,7 +1206,7 @@ document.addEventListener('DOMContentLoaded', () => {
         }
     }
 
-    // Liquid-Smooth Number Counter
+
     function animateValue(obj, start, end, duration, prefix = '') {
         let startTimestamp = null;
         const step = (timestamp) => {
@@ -1503,7 +1221,7 @@ document.addEventListener('DOMContentLoaded', () => {
         window.requestAnimationFrame(step);
     }
 
-    // --- NEW: Farmer Mode & Translation Engine ---
+
     const modeInput = document.getElementById('modeInput');
     if (modeInput) {
         modeInput.addEventListener('change', (e) => {
@@ -1520,12 +1238,12 @@ document.addEventListener('DOMContentLoaded', () => {
         elements.forEach(el => {
             const key = el.getAttribute('data-translate');
             if (lang === 'hi' && trans[key]) {
-                // Store original if not stored
+
                 if (!el.hasAttribute('data-orig')) {
                     el.setAttribute('data-orig', el.innerHTML);
                 }
 
-                // Preserve Icon if present
+
                 const icon = el.querySelector('i');
                 const iconHtml = icon ? icon.outerHTML + ' ' : '';
                 el.innerHTML = iconHtml + trans[key];
@@ -1534,19 +1252,19 @@ document.addEventListener('DOMContentLoaded', () => {
             }
         });
 
-        // Update Button Text separately if needed
+
         const optBtn = document.getElementById('optimizeBtn');
         if (optBtn) {
             optBtn.textContent = lang === 'hi' ? trans['optimize_btn'] : "Run Engine";
         }
     }
 
-    // --- NEW: Web Speech API for Hindi Voice Input ---
+
     const voiceBtn = document.createElement('button');
     voiceBtn.innerHTML = '<i class="fas fa-microphone"></i>';
     voiceBtn.className = 'voice-input-btn';
     voiceBtn.title = "Speak in Hindi / हिंदी में बोलें";
-    // Append to a visible spot in form
+
     const formTitle = document.querySelector('.input-panel h3');
     if (formTitle) formTitle.appendChild(voiceBtn);
 
@@ -1577,13 +1295,13 @@ document.addEventListener('DOMContentLoaded', () => {
 
     function processVoiceCommand(text) {
         console.log("Voice Input:", text);
-        // Simple Logic: If "Wheat" or "Gehu" mentioned, set crop (if applicable)
-        // Or "Pachas Hazar" -> Budget
+
+
         if (text.includes("हजार")) {
             const num = text.match(/\d+/) || [50000];
             document.getElementById('totalBudget').value = num[0];
         }
-        // Add more keyword mappings as needed for a robust demo
+
     }
 
     /* =========================================================================
