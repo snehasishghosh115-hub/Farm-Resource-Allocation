@@ -253,5 +253,23 @@ document.addEventListener('DOMContentLoaded', () => {
             `;
             insightsList.appendChild(item);
         });
+
+        // 🔗 Database Integration: Save the results for AI model training
+        const syncLabel = document.getElementById('sync-text');
+        const syncDot = document.querySelector('.cloud-dot');
+
+        syncLabel.textContent = "Syncing...";
+        syncDot.style.background = "#FFC107"; // Orange for sync
+
+        const dbResult = await window.AgriDB.saveOptimizationRecord({
+            land, water, budget, loc, month, weather,
+            metrics: results.metrics,
+            allocation: results.allocation
+        });
+
+        setTimeout(() => {
+            syncLabel.textContent = dbResult ? "Synced to Cloud" : "Saved Locally (Offline)";
+            syncDot.style.background = dbResult ? "#00E676" : "#f44336";
+        }, 800);
     });
 });
