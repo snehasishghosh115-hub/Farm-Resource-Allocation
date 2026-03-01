@@ -1365,3 +1365,366 @@ body.farmer-mode .hero-content {
     color: var(--text-muted);
     line-height: 1.4;
 }
+
+/* =========================================================================
+   WOW-FACTOR SCROLL ANIMATIONS (HACKATHON EDITION)
+   ========================================================================= */
+
+/* Base class for elements waiting to be revealed */
+.reveal-on-scroll {
+    opacity: 0;
+    transform: translateY(40px) scale(0.98);
+    transition: opacity 0.8s cubic-bezier(0.2, 0.8, 0.2, 1),
+        transform 0.8s cubic-bezier(0.2, 0.8, 0.2, 1);
+    will-change: opacity, transform;
+}
+
+/* When the element intersects with the viewport */
+.reveal-on-scroll.is-visible {
+    opacity: 1;
+    transform: translateY(0) scale(1);
+}
+
+/* 
+   Staggered Delays for Children Elements 
+   Use these classes on individual items within a grid/list to create a cascading reveal
+*/
+.delay-100 {
+    transition-delay: 100ms;
+}
+
+.delay-200 {
+    transition-delay: 200ms;
+}
+
+.delay-300 {
+    transition-delay: 300ms;
+}
+
+.delay-400 {
+    transition-delay: 400ms;
+}
+
+.delay-500 {
+    transition-delay: 500ms;
+}
+
+/* 
+   Directional Reveals 
+   For elements that should slide in from the left or right 
+*/
+.reveal-left {
+    transform: translateX(-50px);
+}
+
+.reveal-left.is-visible {
+    transform: translateX(0);
+}
+
+.reveal-right {
+    transform: translateX(50px);
+}
+
+.reveal-right.is-visible {
+    transform: translateX(0);
+}
+
+/* Pop Reveal for emphasis (like top suggested crop) */
+.reveal-pop {
+    opacity: 0;
+    transform: scale(0.8);
+    transition: opacity 0.6s cubic-bezier(0.34, 1.56, 0.64, 1),
+        /* Bouncy spring curve */
+        transform 0.6s cubic-bezier(0.34, 1.56, 0.64, 1);
+}
+
+.reveal-pop.is-visible {
+    opacity: 1;
+    transform: scale(1);
+}
+
+/* 
+   Dynamic Hover Enhancements for Cards 
+   Making the UI feel "alive" when the user interacts 
+*/
+.glass-panel:hover,
+.result-card:hover,
+.sustainability-card:hover {
+    transform: translateY(-5px);
+    box-shadow: 0 15px 35px rgba(0, 0, 0, 0.3),
+        inset 0 0 0 1px rgba(255, 255, 255, 0.15);
+    transition: transform 0.4s cubic-bezier(0.2, 0.8, 0.2, 1),
+        box-shadow 0.4s cubic-bezier(0.2, 0.8, 0.2, 1);
+}
+
+/* Subtle pulse animation for critical inputs/buttons to draw attention */
+@keyframes softPulse {
+    0% {
+        box-shadow: 0 0 0 0 rgba(16, 185, 129, 0.4);
+    }
+
+    70% {
+        box-shadow: 0 0 0 10px rgba(16, 185, 129, 0);
+    }
+
+    100% {
+        box-shadow: 0 0 0 0 rgba(16, 185, 129, 0);
+    }
+}
+
+.optimize-btn {
+    animation: softPulse 2.5s infinite;
+}
+
+.optimize-btn:hover {
+    animation: none;
+    /* Stop pulsing on hover so the default hover state takes over */
+    transform: translateY(-2px);
+    box-shadow: 0 10px 25px rgba(16, 185, 129, 0.5);
+}
+
+/* =========================================================================
+   IOT SENSOR UPLOAD STYLES
+   ========================================================================= */
+
+.file-upload-wrapper {
+    position: relative;
+    width: 100%;
+    margin-top: 0.5rem;
+}
+
+.file-input {
+    position: absolute;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    opacity: 0;
+    cursor: pointer;
+    z-index: 10;
+}
+
+.file-upload-ui {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    padding: 2rem;
+    border: 2px dashed rgba(16, 185, 129, 0.3);
+    border-radius: 12px;
+    background: rgba(16, 185, 129, 0.03);
+    transition: all 0.3s ease;
+    text-align: center;
+}
+
+.file-input:hover+.file-upload-ui {
+    background: rgba(16, 185, 129, 0.08);
+    border-color: rgba(16, 185, 129, 0.6);
+}
+
+.file-input:focus+.file-upload-ui {
+    border-color: var(--highlight);
+    box-shadow: 0 0 15px rgba(245, 158, 11, 0.2);
+}
+
+.upload-icon {
+    font-size: 2rem;
+    color: var(--accent-1);
+    margin-bottom: 0.8rem;
+}
+
+.upload-text {
+    color: var(--text-muted);
+    font-size: 0.9rem;
+}
+
+.upload-text strong {
+    color: var(--accent-1);
+}
+
+.demo-helper {
+    margin-top: 1rem;
+    display: flex;
+    align-items: center;
+    gap: 1rem;
+}
+
+.demo-btn {
+    padding: 0.5rem 1rem;
+    font-size: 0.8rem;
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+    width: auto;
+    margin-top: 0;
+    background: rgba(245, 158, 11, 0.1);
+    color: var(--highlight);
+    border-color: rgba(245, 158, 11, 0.3);
+}
+
+.demo-btn:hover {
+    background: rgba(245, 158, 11, 0.2);
+    color: #fff;
+}
+
+.demo-status {
+    font-size: 0.8rem;
+    color: var(--status-safe);
+    font-weight: 600;
+}
+
+/* =========================================================================
+   IOT DASHBOARD STYLES (RESULTS PAGE)
+   ========================================================================= */
+
+#iotDashboardContainer {
+    margin-top: 2rem;
+    display: none;
+    /* Hidden by default until data is detected */
+}
+
+.dashboard-grid {
+    display: grid;
+    grid-template-columns: 2fr 1fr;
+    gap: 2rem;
+    margin-top: 1.5rem;
+}
+
+@media (max-width: 968px) {
+    .dashboard-grid {
+        grid-template-columns: 1fr;
+    }
+}
+
+.chart-wrapper {
+    background: rgba(15, 23, 42, 0.4);
+    border: 1px solid rgba(255, 255, 255, 0.05);
+    border-radius: 12px;
+    padding: 1.5rem;
+    margin-bottom: 1.5rem;
+}
+
+.chart-wrapper h3 {
+    margin-bottom: 1rem;
+    font-size: 1rem;
+    color: var(--text-base);
+    font-weight: 600;
+}
+
+.canvas-container {
+    position: relative;
+    height: 300px;
+    width: 100%;
+}
+
+.alerts-column {
+    display: flex;
+    flex-direction: column;
+    gap: 1.5rem;
+}
+
+.smart-alerts-card,
+.planting-window-card {
+    background: rgba(15, 23, 42, 0.6);
+    border: 1px solid rgba(255, 255, 255, 0.08);
+    border-radius: 12px;
+    padding: 1.5rem;
+    box-shadow: 0 10px 30px rgba(0, 0, 0, 0.2);
+}
+
+.card-header h3 {
+    font-size: 1.1rem;
+    color: var(--accent-1);
+    margin-bottom: 1rem;
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+}
+
+.alerts-list {
+    display: flex;
+    flex-direction: column;
+    gap: 0.8rem;
+}
+
+.iot-alert-item {
+    padding: 1rem;
+    border-radius: 8px;
+    background: rgba(255, 255, 255, 0.03);
+    border-left: 4px solid var(--text-muted);
+    font-size: 0.85rem;
+    transition: transform 0.2s;
+}
+
+.iot-alert-item:hover {
+    transform: translateX(5px);
+}
+
+.iot-alert-item.critical {
+    border-left-color: var(--status-critical);
+    background: rgba(239, 68, 68, 0.08);
+}
+
+.iot-alert-item.warning {
+    border-left-color: var(--status-moderate);
+    background: rgba(245, 158, 11, 0.08);
+}
+
+.iot-alert-item.info {
+    border-left-color: #3b82f6;
+    background: rgba(59, 130, 246, 0.08);
+}
+
+.iot-alert-title {
+    font-weight: 700;
+    margin-bottom: 0.3rem;
+    display: block;
+    color: var(--text-main);
+}
+
+.iot-alert-desc {
+    color: var(--text-muted);
+    line-height: 1.4;
+}
+
+.planting-content {
+    background: rgba(16, 185, 129, 0.05);
+    border: 1px dashed rgba(16, 185, 129, 0.3);
+    padding: 1.5rem;
+    border-radius: 8px;
+    text-align: center;
+}
+
+.planting-score {
+    font-size: 3rem;
+    font-weight: 800;
+    color: var(--status-safe);
+    font-family: 'JetBrains Mono', monospace;
+    line-height: 1;
+    margin-bottom: 0.5rem;
+}
+
+.planting-label {
+    font-size: 0.8rem;
+    color: var(--text-muted);
+    text-transform: uppercase;
+    letter-spacing: 1px;
+}
+
+.planting-suggestion {
+    margin-top: 1rem;
+    font-size: 0.9rem;
+    color: var(--text-base);
+    font-weight: 600;
+}
+
+.pulse-safe {
+    background: rgba(16, 185, 129, 0.2);
+    color: var(--status-safe);
+    padding: 4px 12px;
+    border-radius: 30px;
+    font-size: 0.75rem;
+    font-weight: 600;
+    border: 1px solid rgba(16, 185, 129, 0.4);
+    animation: softPulse 2s infinite;
+}

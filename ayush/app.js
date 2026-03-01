@@ -57,7 +57,8 @@ document.addEventListener('DOMContentLoaded', () => {
             if (distData && distData.blockList) {
                 blocks = distData.blockList.map(b => b.name);
             }
-        }
+        });
+    }
 
 
         if (blocks.length === 0) {
@@ -65,7 +66,6 @@ document.addEventListener('DOMContentLoaded', () => {
             if (localKey) {
                 blocks = window.AgriData.districtBlocks[localKey];
             }
-        }
 
 
         if (blocks.length === 0) {
@@ -98,6 +98,8 @@ document.addEventListener('DOMContentLoaded', () => {
     const resultsContent = document.getElementById('resultsContent');
     const formError = document.getElementById('formError');
     const closeModal = document.querySelector('.close-modal');
+    const viewJsonBtn = document.getElementById('viewJsonBtn');
+    const jsonModal = document.getElementById('jsonModal');
 
     let currentApiPayload = {};
     let lastInputs = {};
@@ -125,21 +127,36 @@ document.addEventListener('DOMContentLoaded', () => {
             return;
         }
 
-        const inputs = {
-            state,
-            district,
-            block,
-            village: document.getElementById('village') ? document.getElementById('village').value : "Default Village",
-            month: document.getElementById('month').value,
-            landSize,
-            soilType: document.getElementById('soilType').value,
-            soilPh: soilPh || 6.5,
-            waterAvailable,
-            totalBudget
-        };
+            const inputs = {
+                state,
+                district,
+                block,
+                village: document.getElementById('village') ? document.getElementById('village').value : "Default Village",
+                month: document.getElementById('month').value,
+                landSize,
+                soilType: document.getElementById('soilType').value,
+                soilPh: soilPh || 6.5,
+                waterAvailable,
+                totalBudget
+            };
 
-        startOptimization(inputs);
-    });
+            // Save to session and navigate
+            sessionStorage.setItem('agri_inputs', JSON.stringify(inputs));
+            window.location.href = "results.html";
+        });
+    }
+
+    // Auto-load on results page
+    if (resultsContent && !farmForm) {
+        const savedInputs = sessionStorage.getItem('agri_inputs');
+        if (savedInputs) {
+            const inputs = JSON.parse(savedInputs);
+            startOptimization(inputs);
+        } else {
+            // Redirect back if no data
+            window.location.href = "index.html";
+        }
+    }
 
 
     const compareToggle = document.getElementById('compareToggle');
@@ -231,6 +248,11 @@ document.addEventListener('DOMContentLoaded', () => {
             initSimulation(inputs);
 
             try {
+                if (loadingState) loadingState.classList.add('hidden');
+                if (resultsContent) {
+                    resultsContent.classList.remove('hidden');
+                    resultsContent.scrollIntoView({ behavior: 'smooth' });
+                }
                 showResults(results, weatherData, inputs);
             } catch (renderError) {
                 console.error("showResults crashed:", renderError);
@@ -314,7 +336,9 @@ document.addEventListener('DOMContentLoaded', () => {
 
         const avgCostPerAcre = 35000;
         let affordableAcres = inputs.totalBudget / avgCostPerAcre;
-        let actualAcresToFarm = Math.min(inputs.landSize, affordableAcres);
+        // Do not strictly limit acres by budget to near-zero, otherwise all yields/costs scale to 0.
+        // Assume they can seek financing if budget is too low (this prevents dashboard breaking)
+        let actualAcresToFarm = inputs.landSize;
         let actualCost = actualAcresToFarm * avgCostPerAcre;
 
 
@@ -603,15 +627,28 @@ document.addEventListener('DOMContentLoaded', () => {
 
 
 
+        // --- NEW: Government Subsidies Filter ---
+        // Expose crop name to inputs context for scheme evaluation
+        const schemeInputs = { ...inputs, crop: bestCrop.name, water_daily: (bestCrop.water_req * actualAcresToFarm) };
+        result.subsidies = (window.AgriData.governmentSchemes || []).filter(scheme => {
+            try {
+                return scheme.eligibility(schemeInputs);
+            } catch (e) {
+                return false;
+            }
+        });
+
         return result;
     }
 
 
     function showResults(data, weather, inputs) {
-        loadingState.classList.add('hidden');
-        resultsContent.classList.remove('hidden');
-        optimizeBtn.disabled = false;
-        optimizeBtn.textContent = "Run Engine";
+        if (loadingState) loadingState.classList.add('hidden');
+        if (resultsContent) resultsContent.classList.remove('hidden');
+        if (optimizeBtn) {
+            optimizeBtn.disabled = false;
+            optimizeBtn.textContent = "Run Engine";
+        }
 
 
         const compareToggle = document.getElementById('compareToggle');
@@ -754,25 +791,34 @@ document.addEventListener('DOMContentLoaded', () => {
         if (sunCard && sunData) {
 
             if (sunScoreText) sunScoreText.textContent = `${sunData.score}%`;
-            if (esgCircle) esgCircle.style.strokeDasharray = `${sunData.score}, 100`;
+            if (esgCircle) {
+                // Defer to allow CSS transition to paint from 0
+                setTimeout(() => {
+                    esgCircle.style.strokeDasharray = `${sunData.score}, 100`;
+                }, 100);
+            }
             if (esgBadge) esgBadge.textContent = `ESG Rating: ${sunData.investor_rating}`;
 
             if (carbonVal) carbonVal.textContent = sunData.carbon_footprint;
             if (carbonBar) {
-                const carbonPct = Math.min(100, (parseInt(sunData.carbon_footprint.replace(/[^\d]/g, '')) / (window.AgriData.ESG_CONSTANTS.CARBON_BENCHMARK * inputs.landSize)) * 100);
-                carbonBar.style.width = `${carbonPct}%`;
+                // Split by space to isolate "1,500" from "kg CO2e" before removing non-digits
+                let rawCarbon = parseInt(sunData.carbon_footprint.split(' ')[0].replace(/[^\d]/g, '')) || 0;
+                const carbonPct = Math.min(100, (rawCarbon / (window.AgriData.ESG_CONSTANTS.CARBON_BENCHMARK * inputs.landSize)) * 100);
+                setTimeout(() => { carbonBar.style.width = `${carbonPct}%`; }, 200);
             }
 
             if (esgWaterVal) esgWaterVal.textContent = sunData.groundwater_impact;
             if (esgWaterBar) {
-                const waterImpactPct = Math.min(100, (parseInt(sunData.groundwater_impact.replace(/[^\d]/g, '')) / (inputs.waterAvailable * 2)) * 100);
-                esgWaterBar.style.width = `${waterImpactPct}%`;
+                let rawWater = parseInt(sunData.groundwater_impact.split(' ')[0].replace(/[^\d]/g, '')) || 0;
+                const waterImpactPct = Math.min(100, (rawWater / (inputs.waterAvailable * 2)) * 100);
+                setTimeout(() => { esgWaterBar.style.width = `${waterImpactPct}%`; }, 300);
             }
 
             if (organicVal) organicVal.textContent = sunData.organic_boost;
             if (organicBar) {
-                const organicPct = (parseInt(sunData.organic_boost.replace(/[^\d]/g, '')) / window.AgriData.ESG_CONSTANTS.ORGANIC_SCORE_MAX) * 100;
-                organicBar.style.width = `${organicPct}%`;
+                let rawOrganic = parseInt(sunData.organic_boost.split(' ')[0].replace(/[^\d]/g, '')) || 0;
+                const organicPct = (rawOrganic / window.AgriData.ESG_CONSTANTS.ORGANIC_SCORE_MAX) * 100;
+                setTimeout(() => { organicBar.style.width = `${organicPct}%`; }, 400);
             }
 
             sunCard.className = 'sustainability-card glass-panel mt-4 p-4 animate-in';
@@ -799,15 +845,19 @@ document.addEventListener('DOMContentLoaded', () => {
 
         const subsidyList = document.getElementById('subsidyList');
         if (subsidyList && data.subsidies) {
-            subsidyList.innerHTML = data.subsidies.map(s => `
-                <div class="subsidy-item animate-in">
-                    <div class="subsidy-header">
-                        <span class="subsidy-name">${s.name}</span>
-                        <span class="subsidy-benefit">${s.benefit}</span>
+            if (data.subsidies.length > 0) {
+                subsidyList.innerHTML = data.subsidies.map(s => `
+                    <div class="subsidy-item animate-in">
+                        <div class="subsidy-header">
+                            <span class="subsidy-name">${s.name}</span>
+                            <span class="subsidy-benefit">${s.benefit}</span>
+                        </div>
+                        <p class="subsidy-desc">${s.description}</p>
                     </div>
-                    <p class="subsidy-desc">${s.description}</p>
-                </div>
-            `).join('') || '<div class="text-muted" style="padding: 1rem;">No specific subsidies found for this profile.</div>';
+                `).join('');
+            } else {
+                subsidyList.innerHTML = '<div class="text-muted" style="padding: 1rem;">No specific subsidies found for this profile.</div>';
+            }
         }
 
         const riskData = data.market_risk;
@@ -958,16 +1008,17 @@ document.addEventListener('DOMContentLoaded', () => {
         const suggestionsBox = document.getElementById('cropSuggestions');
         suggestionsBox.innerHTML = '';
 
-        const alternatives = Array.isArray(data.alternatives) ? data.alternatives : [];
-        const allTopCrops = rec ? [rec, ...alternatives] : alternatives;
+            const alternatives = Array.isArray(data.alternatives) ? data.alternatives : [];
+            const allTopCrops = rec ? [rec, ...alternatives] : alternatives;
 
-        allTopCrops.forEach((c, idx) => {
-            if (!c || !c.name) return;
-            const div = document.createElement('div');
-            div.className = `suggestion-pill ${idx === 0 ? 'top-pick' : ''}`;
-            div.innerHTML = `<strong>${c.name}</strong><br><small>Profit: ${safeVal(c.net_profit)}</small>`;
-            suggestionsBox.appendChild(div);
-        });
+            allTopCrops.forEach((c, idx) => {
+                if (!c || !c.name) return;
+                const div = document.createElement('div');
+                div.className = `suggestion-pill ${idx === 0 ? 'top-pick' : ''}`;
+                div.innerHTML = `<strong>${c.name}</strong><br><small>Profit: ${safeVal(c.net_profit)}</small>`;
+                suggestionsBox.appendChild(div);
+            });
+        }
 
 
         document.getElementById('jsonOutput').textContent = JSON.stringify({
@@ -1051,12 +1102,14 @@ document.addEventListener('DOMContentLoaded', () => {
         jsonModal.classList.remove('hidden');
     });
 
-    closeModal.addEventListener('click', () => {
-        jsonModal.classList.add('hidden');
-    });
+    if (closeModal) {
+        closeModal.addEventListener('click', () => {
+            if (jsonModal) jsonModal.classList.add('hidden');
+        });
+    }
 
     window.addEventListener('click', (e) => {
-        if (e.target == jsonModal) {
+        if (jsonModal && e.target == jsonModal) {
             jsonModal.classList.add('hidden');
         }
     });
@@ -1081,6 +1134,9 @@ document.addEventListener('DOMContentLoaded', () => {
                 simulationDebounceTimer = setTimeout(runSimulation, 150);
             });
         });
+
+        // Initial run to populate values instead of leaving them at 0
+        setTimeout(runSimulation, 300);
     }
 
     function updateSimLabels() {
@@ -1247,4 +1303,182 @@ document.addEventListener('DOMContentLoaded', () => {
         }
 
     }
+
+    /* =========================================================================
+       WOW-FACTOR ANIMATION ORCHESTRATOR
+       Handles the scroll reveals for a premium hackathon presentation feel.
+       ========================================================================= */
+    function initScrollAnimations() {
+        // High-performance observer settings
+        const observerOptions = {
+            root: null,
+            rootMargin: '0px 0px -50px 0px', // Trigger slightly before it hits the bottom
+            threshold: 0.1 // Just 10% visibility is enough to trigger
+        };
+
+        const revealObserver = new IntersectionObserver((entries, observer) => {
+            entries.forEach(entry => {
+                if (entry.isIntersecting) {
+                    // Add the class that triggers the CSS transition
+                    entry.target.classList.add('is-visible');
+
+                    // Optional: Unobserve after revealing to prevent re-animating on scroll up (cleaner look)
+                    // observer.unobserve(entry.target); 
+                } else {
+                    // Remove if you want it to fade out when scrolling past
+                    entry.target.classList.remove('is-visible');
+                }
+            });
+        }, observerOptions);
+
+        // Select all major container elements that should animate in
+        const elementsToAnimate = [
+            // Structural Blocks
+            '.hero-content', '.glass-panel', '.input-panel',
+            // Results Containers
+            '.result-card', '.simulation-card', '.sustainability-card',
+            // Specific Elements
+            '.esg-dashboard', '.impact-grid', '.weather-panel'
+        ];
+
+        // Apply base reveal class and observe
+        elementsToAnimate.forEach(selector => {
+            document.querySelectorAll(selector).forEach(el => {
+                // Determine if we want a specific direction or pop effect
+                if (el.classList.contains('simulation-card')) {
+                    el.classList.add('reveal-pop'); // Bouncy pop for the "Wow!" element
+                } else if (el.classList.contains('sidebar')) {
+                    el.classList.add('reveal-on-scroll', 'reveal-right'); // Slide from side
+                } else {
+                    el.classList.add('reveal-on-scroll'); // Standard float up
+                }
+
+                revealObserver.observe(el);
+            });
+        });
+
+        // Setup staggered animations for lists/grids (e.g., crop suggestions, metrics)
+        const setupStagger = (parentSelector, childSelector) => {
+            document.querySelectorAll(parentSelector).forEach(container => {
+                const children = container.querySelectorAll(childSelector);
+                children.forEach((child, index) => {
+                    child.classList.add('reveal-on-scroll');
+
+                    // Assign cascading delay classes based on flex/grid order
+                    // Capped at 500ms to keep it snappy
+                    const delayClass = `delay-${Math.min((index + 1) * 100, 500)}`;
+                    child.classList.add(delayClass);
+
+                    revealObserver.observe(child);
+                });
+            });
+        };
+
+        // Stagger the intelligence pills and resource allocation items
+        setupStagger('.crop-list', '.suggestion-pill');
+        setupStagger('.allocation-grid', '.allocation-item');
+        setupStagger('.metric-grid', '.metric');
+    }
+
+    // Initialize animations after a short delay to ensure DOM is fully rendered
+    // and to not block initial paint
+    setTimeout(initScrollAnimations, 100);
+
+    /* =========================================================================
+       IOT SENSOR DEMO DATA GENERATOR
+       ========================================================================= */
+    const loadDemoSensorBtn = document.getElementById('loadDemoSensorBtn');
+    const demoStatus = document.getElementById('demoStatus');
+    const sensorCsvInput = document.getElementById('sensorCsv');
+
+    // Also handle manual file upload text update
+    if (sensorCsvInput) {
+        sensorCsvInput.addEventListener('change', (e) => {
+            if (e.target.files.length > 0) {
+                const fileName = e.target.files[0].name;
+                const uploadText = e.target.closest('.file-upload-wrapper').querySelector('.upload-text');
+                if (uploadText) {
+                    uploadText.innerHTML = `Selected: <strong>${fileName}</strong>`;
+                }
+            }
+        });
+    }
+
+    if (loadDemoSensorBtn) {
+        loadDemoSensorBtn.addEventListener('click', () => {
+            demoStatus.textContent = "Generating 14-day sensor logs...";
+            demoStatus.style.color = "var(--highlight)";
+
+            // Simulate processing time for hackathon wow-factor
+            setTimeout(() => {
+                const demoData = generateDemoTimeSeriesData();
+                sessionStorage.setItem('agri_sensor_data', JSON.stringify(demoData));
+
+                demoStatus.textContent = "✓ 336 Data points loaded successfully!";
+                demoStatus.style.color = "var(--status-safe)";
+
+                // Update file input UI to show it's "loaded"
+                const uploadText = document.querySelector('.upload-text');
+                if (uploadText) {
+                    uploadText.innerHTML = `Loaded: <strong>14-day_sensor_log.csv</strong>`;
+                }
+            }, 800);
+        });
+    }
+
+    // Helper to generate realistic-looking time series data (Hourly for 14 days = 336 points)
+    function generateDemoTimeSeriesData() {
+        const data = [];
+        let currentTemp = 25;
+        let currentMoisture = 35; // Optimal: 25-40%
+        let currentPH = 6.8;      // Optimal: 6.0-7.5
+        let currentNitrogen = 350; // Optimal: 200-500
+
+        const now = new Date();
+        const startTime = new Date(now.getTime() - (14 * 24 * 60 * 60 * 1000)); // 14 days ago
+
+        for (let i = 0; i < 336; i++) {
+            const timestamp = new Date(startTime.getTime() + (i * 60 * 60 * 1000));
+
+            // Diurnal temperature cycle (between ~15 and ~30)
+            const hour = timestamp.getHours();
+            const tempBase = 22 + Math.sin((hour - 6) * Math.PI / 12) * 8;
+            currentTemp = tempBase + (Math.random() * 2 - 1);
+
+            // Moisture drops slowly
+            currentMoisture -= (currentTemp / 200) + (Math.random() * 0.1);
+            // Severe drought simulation at index 240 (day 10)
+            if (i === 240) {
+                currentMoisture -= 18;
+            }
+            // Rapid recovery
+            if (i === 280) {
+                currentMoisture += 25;
+            }
+            if (currentMoisture < 8) currentMoisture = 8;
+            if (currentMoisture > 60) currentMoisture = 60;
+
+            // pH mostly stable
+            currentPH += (Math.random() * 0.04 - 0.02);
+            // Sudden acidic dip towards end
+            if (i > 288 && i < 300) {
+                currentPH -= 0.15;
+            }
+            if (currentPH < 4.5) currentPH = 4.5;
+
+            // Nitrogen drops steadily
+            currentNitrogen -= (Math.random() * 2);
+            if (currentNitrogen < 50) currentNitrogen = 50;
+
+            data.push({
+                timestamp: timestamp.toISOString(),
+                temperature: currentTemp.toFixed(1),
+                moisture: currentMoisture.toFixed(1),
+                ph: currentPH.toFixed(2),
+                nitrogen: currentNitrogen.toFixed(0)
+            });
+        }
+        return data;
+    }
+
 });
